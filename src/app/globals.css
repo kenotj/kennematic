@@ -1,0 +1,130 @@
+@import "tailwindcss";
+
+/* ===========================================================
+   Design tokens — ported verbatim from legacy/style.css :root
+   Namespaced names generate Tailwind utilities (font-display,
+   text-ui, ease-expo, …); the raw fs / gap / pad names are kept
+   identical to legacy so arbitrary values such as
+   text-[length:var(--fs-ui)] resolve exactly as before.
+   (Keep star-slash sequences out of this comment — one inside a
+   token glob silently terminated it and voided the whole block.)
+   =========================================================== */
+@theme {
+  /* color */
+  --color-red: #EB0004;
+  --red: #EB0004;
+
+  /* font families */
+  --font-display: 'BBH Bartle', sans-serif;
+  --font-script: 'Alex Brush', cursive;
+  --font-body: 'Inter Tight', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+
+  /* type scale (raw legacy names) */
+  --fs-display: 13.6054vw;
+  --fs-stat: 6.8027vw;
+  --fs-work: max(24px, 3.4014vw);
+  --fs-ui: max(13px, 2.0408vw);
+  --fs-micro: max(11px, 1.0204vw);
+
+  /* type scale (Tailwind font-size utilities: text-display, text-stat, …) */
+  --text-display: 13.6054vw;
+  --text-display--line-height: 100%;
+  --text-stat: 6.8027vw;
+  --text-stat--line-height: 100%;
+  --text-work: max(24px, 3.4014vw);
+  --text-work--line-height: 100%;
+  --text-ui: max(13px, 2.0408vw);
+  --text-ui--line-height: 100%;
+  --text-micro: max(11px, 1.0204vw);
+  --text-micro--line-height: 100%;
+
+  /* spacing */
+  --gap-title: max(10px, 1.6327vw);
+  --pad-header: max(16px, 2.7211vw);
+  --top-header: max(16px, 2.1769vw);
+
+  /* motion */
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* layout */
+  --runway: 900vh;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after { box-sizing: border-box; }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    background: #000;
+    overscroll-behavior: none;
+  }
+
+  body {
+    font-family: 'Inter Tight', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    color: #fff;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, p, dl, dt, dd { margin: 0; }
+  dd { margin-inline-start: 0; }
+  a { color: inherit; text-decoration: none; }
+}
+
+/* ---------- plate canvases ---------- */
+canvas.plate { opacity: 0; transition: opacity 240ms linear; }
+canvas.plate.is-live { opacity: 1; }
+.is-covered { visibility: hidden; }
+
+/* ---------- runway ---------- */
+.runway { height: var(--runway); }
+
+/* ---------- entrance (class-driven; must be correct with JS off) ---------- */
+.js .title__mark { opacity: 0; filter: blur(14px); }
+.js .title__tag { opacity: 0; }
+.js .header__item { opacity: 0; filter: blur(8px); transform: translateY(12px); }
+
+.js.is-ready .title__mark {
+  opacity: 1;
+  filter: blur(0);
+  transition: opacity 1400ms var(--ease-expo), filter 1400ms var(--ease-expo);
+}
+.js.is-ready .title__tag {
+  opacity: 1;
+  transition: opacity 700ms var(--ease-expo) 380ms;
+}
+.js.is-ready .header__item {
+  opacity: 1;
+  filter: blur(0);
+  transform: translateY(0);
+  transition: opacity 700ms var(--ease-expo), filter 700ms var(--ease-expo), transform 700ms var(--ease-expo);
+}
+.js.is-ready .header__item:nth-child(1) { transition-delay: 300ms; }
+.js.is-ready .header__item:nth-child(2) { transition-delay: 360ms; }
+.js.is-ready .header__item:nth-child(3) { transition-delay: 420ms; }
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .exit-3d { transform: none; }
+  .exit-3d.is-exiting { filter: none; }
+  .rise { transform: none; }
+  .rise.is-anim { filter: none; }
+  .w-row { transform: none; }
+  .w-row.is-flying { filter: none; }
+  .w-title.is-entering { filter: none; }
+  .js .title__mark { filter: none; }
+  .js .header__item { filter: none; transform: none; }
+  .js.is-ready .title__mark,
+  .js.is-ready .title__tag,
+  .js.is-ready .header__item {
+    filter: none;
+    transform: none;
+    transition: opacity 200ms linear;
+    transition-delay: 0ms;
+  }
+  .stage canvas.plate { transition: none; }
+}

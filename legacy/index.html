@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PLATE</title>
+<meta name="description" content="PLATE">
+<script>document.documentElement.classList.add('js')</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BBH+Bartle&family=Alex+Brush&family=Inter+Tight:wght@400;500&display=swap">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/mp4box@0.5.2/dist/mp4box.all.min.js" defer></script>
+<script src="main.js" type="module"></script>
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <video id="v1" src="https://r2.motionsites.dev/motionsites/assets/e3b8ef71df3e.mp4" muted playsinline preload="auto" tabindex="-1" aria-hidden="true"></video>
+  <canvas class="plate" id="c1" width="1280" height="720"></canvas>
+</div>
+
+<div class="reveal reveal--a" id="ra" aria-hidden="true">
+  <video id="v2" src="https://r2.motionsites.dev/motionsites/assets/e3b8ef71df3e.mp4" muted playsinline preload="metadata" tabindex="-1"></video>
+  <canvas class="plate" id="c2" width="1280" height="720"></canvas>
+</div>
+
+<div class="sec2 is-hidden" id="sec2" aria-hidden="true">
+  <div class="strip" id="strip">
+    <div class="w-title" data-block>
+      <p class="w-eyebrow">Selected work</p>
+      <h2 class="w-mark">Built false, shot <span class="w-script">(true)</span>&reg;</h2>
+    </div>
+    <p class="w-desc1" data-block>Every scene starts as a plate. We light it, shoot it, keep what the lens kept. The only effect is that you cannot find one.</p>
+    <div class="w-list" data-block>
+      <div class="w-col w-col--l">
+        <div class="w-row"><span class="w-year">2024</span><span class="w-brand">Aformo</span><span class="w-name">No slow motion</span></div>
+        <div class="w-row"><span class="w-year">2023</span><span class="w-brand">Vessel</span><span class="w-name">No speed ramping</span></div>
+        <div class="w-row"><span class="w-year">2022</span><span class="w-brand">Meridian</span><span class="w-name">Away to another angle</span></div>
+      </div>
+      <div class="w-col w-col--r">
+        <div class="w-row"><span class="w-brand">Halcyon</span><span class="w-name">No on-screen text</span><span class="w-year">2025</span></div>
+        <div class="w-row"><span class="w-brand">Cinder</span><span class="w-name">One long take</span><span class="w-year">2024</span></div>
+        <div class="w-row"><span class="w-brand">Northbound</span><span class="w-name">No cuts</span><span class="w-year">2026</span></div>
+      </div>
+    </div>
+    <p class="w-desc2" data-block>Pure video. No cuts, no slow motion, no speed ramping, no on-screen text, no cutting away to another angle.</p>
+  </div>
+</div>
+
+<div class="reveal reveal--b" id="rb">
+  <video id="v3" src="https://r2.motionsites.dev/motionsites/assets/e3b8ef71df3e.mp4" muted playsinline preload="metadata" tabindex="-1"></video>
+  <canvas class="plate" id="c3" width="1280" height="720"></canvas>
+</div>
+
+<div class="chrome">
+  <nav class="header">
+    <a class="header__item" id="menu" href="#menu">Menu</a>
+    <a class="header__item" id="about" href="#about">About</a>
+    <a class="header__item" id="contact" href="#contact">Contact</a>
+  </nav>
+
+  <div class="title exit-3d">
+    <p class="title__tag">Creative AI Film Studio</p>
+    <h1 class="title__mark">PL<span class="title__script">A</span>TE&reg;</h1>
+  </div>
+
+  <p class="about rise">Impossible scenes, shot like they happened. No seams, no tell, nothing that gives it away. The camera believes it, so you will too.</p>
+
+  <dl class="stat exit-3d is-gone" data-stat>
+    <dt class="stat__label">Clients</dt>
+    <dd class="stat__num">(73)</dd>
+  </dl>
+  <dl class="stat exit-3d is-gone" data-stat>
+    <dt class="stat__label">Sets built</dt>
+    <dd class="stat__num">(208)</dd>
+  </dl>
+  <dl class="stat exit-3d is-gone" data-stat>
+    <dt class="stat__label">Fixed in post</dt>
+    <dd class="stat__num">(0)</dd>
+  </dl>
+</div>
+
+<div class="runway"></div>
+
+</body>
+</html>
