@@ -14,20 +14,15 @@
   --color-red: #EB0004;
   --red: #EB0004;
 
-  /* font families */
-  --font-display: 'BBH Bartle', sans-serif;
-  --font-script: 'Alex Brush', cursive;
-  --font-body: 'Inter Tight', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
-
   /* type scale (raw legacy names) */
-  --fs-display: 13.6054vw;
+  --fs-display: 12.4vw;
   --fs-stat: 6.8027vw;
   --fs-work: max(24px, 3.4014vw);
   --fs-ui: max(13px, 2.0408vw);
   --fs-micro: max(11px, 1.0204vw);
 
   /* type scale (Tailwind font-size utilities: text-display, text-stat, …) */
-  --text-display: 13.6054vw;
+  --text-display: 12.4vw;
   --text-display--line-height: 100%;
   --text-stat: 6.8027vw;
   --text-stat--line-height: 100%;
@@ -50,6 +45,15 @@
   --runway: 900vh;
 }
 
+/* Font tokens live in a separate `@theme inline` block because they reference
+   another CSS variable: next/font emits a hashed family name reachable only
+   through --font-montserrat, and a plain @theme would inline the var()
+   reference into utilities where it never resolves. */
+@theme inline {
+  --font-display: var(--font-montserrat), sans-serif;
+  --font-body: var(--font-montserrat), system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+}
+
 @layer base {
   *,
   *::before,
@@ -64,7 +68,7 @@
   }
 
   body {
-    font-family: 'Inter Tight', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    font-family: var(--font-montserrat), system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
     color: #fff;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -75,6 +79,29 @@
   a { color: inherit; text-decoration: none; }
 }
 
+/* ---------- accent type ---------- */
+/* Fills the role Alex Brush used to play (wordmark accent, stat numbers,
+   "(true)") — same family as everything else, contrast comes from style. */
+.type-accent {
+  font-family: var(--font-montserrat), sans-serif;
+  font-style: italic;
+  font-weight: 300;
+}
+
+/* ---------- liquid glass ---------- */
+/* The one glass recipe for the whole site (nav pill, menu sheet, project
+   cards). backdrop-filter over the video layers is what sells it; the inset
+   highlight is the "wet edge". Keep it an accent — type stays stark. */
+.glass {
+  background: rgba(255, 255, 255, 0.07);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
 /* ---------- plate canvases ---------- */
 canvas.plate { opacity: 0; transition: opacity 240ms linear; }
 canvas.plate.is-live { opacity: 1; }
@@ -83,10 +110,17 @@ canvas.plate.is-live { opacity: 1; }
 /* ---------- runway ---------- */
 .runway { height: var(--runway); }
 
+/* ---------- project rows ---------- */
+/* A fully flown row is invisible but still translated only ±62vw, so part of
+   it can remain inside the viewport — without this it would stay clickable. */
+.w-row.is-flown { pointer-events: none; }
+
 /* ---------- entrance (class-driven; must be correct with JS off) ---------- */
+/* `.pill-enter` is LANDING-ONLY: it keys off `is-ready`, which only fires
+   inside PlateProvider. Sub-page pills must not carry it or they never show. */
 .js .title__mark { opacity: 0; filter: blur(14px); }
 .js .title__tag { opacity: 0; }
-.js .header__item { opacity: 0; filter: blur(8px); transform: translateY(12px); }
+.js .pill-enter { opacity: 0; filter: blur(8px); transform: translateY(-10px); }
 
 .js.is-ready .title__mark {
   opacity: 1;
@@ -97,15 +131,32 @@ canvas.plate.is-live { opacity: 1; }
   opacity: 1;
   transition: opacity 700ms var(--ease-expo) 380ms;
 }
-.js.is-ready .header__item {
+.js.is-ready .pill-enter {
   opacity: 1;
   filter: blur(0);
   transform: translateY(0);
-  transition: opacity 700ms var(--ease-expo), filter 700ms var(--ease-expo), transform 700ms var(--ease-expo);
+  transition: opacity 700ms var(--ease-expo) 300ms, filter 700ms var(--ease-expo) 300ms, transform 700ms var(--ease-expo) 300ms;
 }
-.js.is-ready .header__item:nth-child(1) { transition-delay: 300ms; }
-.js.is-ready .header__item:nth-child(2) { transition-delay: 360ms; }
-.js.is-ready .header__item:nth-child(3) { transition-delay: 420ms; }
+
+/* ---------- route transitions ---------- */
+/* Driven by TransitionLink's document.startViewTransition(). The outgoing page
+   pulls back and blurs, the incoming one rises through it — the same expo
+   vocabulary the scroll stage uses, so a navigation reads as part of the same
+   piece rather than a document swap. TransitionLink skips the API entirely
+   under reduced motion, so these never run there. */
+::view-transition-old(root) {
+  animation: vt-out 300ms var(--ease-expo) both;
+}
+::view-transition-new(root) {
+  animation: vt-in 460ms var(--ease-expo) both;
+}
+
+@keyframes vt-out {
+  to { opacity: 0; filter: blur(10px); transform: scale(1.03); }
+}
+@keyframes vt-in {
+  from { opacity: 0; filter: blur(10px); transform: translateY(22px); }
+}
 
 /* ---------- reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
@@ -117,10 +168,10 @@ canvas.plate.is-live { opacity: 1; }
   .w-row.is-flying { filter: none; }
   .w-title.is-entering { filter: none; }
   .js .title__mark { filter: none; }
-  .js .header__item { filter: none; transform: none; }
+  .js .pill-enter { filter: none; transform: none; }
   .js.is-ready .title__mark,
   .js.is-ready .title__tag,
-  .js.is-ready .header__item {
+  .js.is-ready .pill-enter {
     filter: none;
     transform: none;
     transition: opacity 200ms linear;

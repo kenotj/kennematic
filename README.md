@@ -1,12 +1,21 @@
-# PLATE®
+# KENNEMATIC
 
-A black, scroll-driven cinematic one-pager for a fictional Creative AI Film Studio called **PLATE®**.
+The personal portfolio of Kenneth Ong — **KENNEMATIC** (kinetics × cinematics), a motion & kinetic design practice.
 
-There is no page navigation and there are no sections in the usual sense. The whole site is a single 900vh scroll runway, and everything you see is a fixed layer being driven by one number: how far down that runway you are. One continuous background video is scrubbed by scroll, two rotating "wipe" reveals slice it open, a works section drifts through the middle, and the typography exits in 3D toward the camera and comes back at the end.
+The landing page is a black, scroll-driven cinematic one-pager: a single 900vh scroll runway where everything you see is a fixed layer driven by one number — how far down that runway you are. One continuous background video is scrubbed by scroll, two rotating "wipe" reveals slice it open, a projects section drifts through the middle, and the typography exits in 3D toward the camera and comes back at the end.
 
-The palette is black, white, and `#EB0004` — and the red is used for focus rings only. Nothing else on the page is colored.
+Typography is **Montserrat** throughout (via `next/font`), with weight and italic contrast doing the work three families used to. The palette is black, white, and `#EB0004` — the red is used for focus rings only. Chrome elements (nav pill, menu sheet, project cards) share one liquid-glass recipe: the `.glass` class in `globals.css`, whose backdrop-filter frosts whatever video layer sits behind it.
 
-Ported to React 19 + Next.js (App Router) + Tailwind v4 + Framer Motion. The original vanilla implementation it was ported from lives in [`legacy/`](./legacy) (`index.html`, `style.css`, `main.js`) and is kept as the behavioral reference.
+Beyond the landing scroll there are conventional sub-pages (no scroll engine, ordinary scrolling):
+
+| Route | What it is |
+| --- | --- |
+| `/projects` | Index of all projects |
+| `/projects/[slug]` | Per-project case study — hero, process sections, media placeholders (data in `src/lib/projects.js`) |
+| `/about` | Bio, skills/tools, what "kennematics" means |
+| `/playground` | Loose experiments and one-off studies |
+
+React 19 + Next.js (App Router) + Tailwind v4 + Framer Motion. The original vanilla implementation of the scroll engine (built for a fictional studio, "PLATE®") lives in [`legacy/`](./legacy) (`index.html`, `style.css`, `main.js`) and is kept as the behavioral reference — engine-file header comments still carry that name.
 
 ## Run it
 
@@ -72,17 +81,19 @@ Two anchors structure the page: reveal A opens at `A = 1/3` and reveal B opens a
 | `p` range | What happens |
 | --- | --- |
 | 0 → 0.083 | Title exits in 3D (translate Z, quadratic opacity falloff, blur) |
+| 0.095 → 0.178 | Services strip rises in and out (same rise contract as About, in the gap before it) |
 | 0.18 → 0.27 | About paragraph rises in (expo-out) |
 | 0.333 | **Reveal A** begins its wipe — a −45° rotating slice, opened by an animated `clip-path: inset()` |
 | 0.333 → 0.373 | About paragraph rises out |
 | ~0.426 → ~0.431 | Stage fades out under reveal A (final 93–98% of the wipe), then is hidden outright once covered |
-| 0.43 → 0.77 | Works section visible |
-| 0.44 → 0.56 | Works strip ramps from its emerge offset to its pinned position |
-| 0.44 → 0.49 | Works title enters (opacity × expo, blur falling off as `(1−o)²·6px`) |
-| 0.565 → 0.655 | Work rows fly out — staggered 0.20 apart, 0.60 long each, left and right columns leaving in opposite directions with quadratic blur |
-| 0.667 | **Reveal B** begins its wipe — unrotated, full-viewport, covering the works section and reveal A |
+| 0.43 → 0.77 | Projects section visible (rows are links to `/projects/[slug]`) |
+| 0.44 → 0.56 | Projects strip ramps from its emerge offset to its pinned position |
+| 0.44 → 0.49 | Projects title enters (opacity × expo, blur falling off as `(1−o)²·6px`) |
+| 0.565 → 0.655 | Project cards fly out — staggered 0.20 apart within each pair, 0.60 long each, left and right pairs leaving in opposite directions with quadratic blur |
+| 0.667 | **Reveal B** begins its wipe — unrotated, full-viewport, covering the projects section and reveal A |
 | 0.74 → 0.917 | Three stats in three back-to-back slots (~0.0589 each): 34% in, 40% hold, remainder out |
 | 0.917 → 1 | Title returns, reversing its 3D exit |
+| 0.955 → 0.985 | Contact block rises in at viewport centre and holds — the rest state is wordmark + contact |
 
 Blocks in the works strip additionally fade against a horizontal band as they travel: an entry ramp over 220px above a 130px highline and an exit ramp over the last 160px before the viewport bottom, both expo-eased, taking the minimum of the two.
 

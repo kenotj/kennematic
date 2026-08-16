@@ -1,6 +1,6 @@
 'use client';
 
-/* PLATE® — the logo lockup and its 3D exit.
+/* KENNEMATIC — the logo lockup and its 3D exit.
  *
  * exit-3d contract (shared with Stats.jsx):
  *   transform : translateZ(exit * --exit-z)   ← stays LINEAR. The perspective
@@ -17,7 +17,7 @@
  */
 
 import { useEffect, useRef } from 'react';
-import { motion, useTransform } from 'framer-motion';
+import { animate, motion, stagger, useTransform } from 'framer-motion';
 
 import { usePlate } from '../lib/plate.jsx';
 import { titleOut, titleIn } from '../lib/constants.js';
@@ -26,6 +26,9 @@ import { norm, r3, quantize } from '../lib/easing.js';
 const EXIT_Z = 680; // px
 const EXIT_BLUR = 8; // px
 const BLUR_STEP = 0.25; // px
+
+const MARK = 'KENNEMATIC';
+const EASE_EXPO = [0.16, 1, 0.3, 1];
 
 export default function Title() {
   const { progress, reduced } = usePlate();
@@ -47,6 +50,47 @@ export default function Title() {
     return `blur(${quantize(e * e * EXIT_BLUR, BLUR_STEP)}px)`;
   });
   const visibility = useTransform(exit, (e) => (e >= 1 ? 'hidden' : 'visible'));
+
+  /* Kinetic entrance: each letter rises in on its own beat, on top of the
+   * whole-mark CSS fade/blur that `is-ready` drives. This runs client-side
+   * only, AFTER hydration — the server HTML carries plain visible spans, so
+   * with JS off the wordmark simply renders (no inline opacity:0 in the
+   * markup). The letters are hidden here in the same tick they'd first paint,
+   * and the parent is still at opacity 0 until fonts settle, so nothing
+   * flashes. Reduced motion: skip entirely; the CSS fade already covers it. */
+  useEffect(() => {
+    if (reduced) return;
+    const node = ref.current;
+    if (!node) return;
+    const letters = node.querySelectorAll('[data-letter]');
+    const tag = node.querySelector('.title__tag');
+    if (!letters.length) return;
+
+    animate(letters, { opacity: 0, y: '0.35em' }, { duration: 0 });
+    if (tag) animate(tag, { letterSpacing: '0.42em' }, { duration: 0 });
+
+    let alive = true;
+    const enter = () => {
+      if (!alive) return;
+      alive = false;
+      animate(
+        letters,
+        { opacity: 1, y: '0em' },
+        { delay: stagger(0.05), duration: 1.1, ease: EASE_EXPO }
+      );
+      if (tag) {
+        animate(tag, { letterSpacing: '0.14em' }, { duration: 1.4, ease: EASE_EXPO });
+      }
+    };
+    /* same gate + fallback shape as plate.jsx's entrance */
+    if (document.fonts?.ready) document.fonts.ready.then(enter);
+    else enter();
+    const t = setTimeout(enter, 2600);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+  }, [reduced]);
 
   /* class bookkeeping only — imperative, so it never triggers a re-render */
   useEffect(() => {
@@ -83,13 +127,23 @@ export default function Title() {
         visibility,
       }}
     >
-      <p className="title__tag font-body font-normal text-ui uppercase text-center">
-        Creative AI Film Studio
+      <p className="title__tag font-body font-normal text-ui uppercase text-center tracking-[0.14em]">
+        AI Film &amp; Advert Direction
       </p>
-      {/* NO whitespace inside the <h1>: any text node between PL / A / TE®
-          would hand the line a word-break opportunity. Keep it on one line. */}
-      {/* eslint-disable-next-line */}
-      <h1 className="title__mark font-display font-normal text-display whitespace-nowrap">PL<span className="title__script font-script" style={{ lineHeight: 0 }}>A</span>TE&reg;</h1>
+      {/* Letters are aria-hidden spans (the h1 carries the accessible name);
+          inline-block so each can translate. No whitespace between them, and
+          whitespace-nowrap stays as the guard against any wrap/clip surprise. */}
+      <h1
+        className="title__mark font-display font-extrabold tracking-[-0.02em] text-display whitespace-nowrap"
+        aria-label={MARK}
+      >
+        {MARK.split('').map((ch, i) => (
+          // eslint-disable-next-line react/no-array-index-key
+          <span key={i} data-letter="" aria-hidden="true" className="inline-block">
+            {ch}
+          </span>
+        ))}
+      </h1>
     </motion.div>
   );
 }
