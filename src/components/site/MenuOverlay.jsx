@@ -16,6 +16,7 @@ import { motion } from 'framer-motion';
 
 import { CONTACT_EMAIL } from '../../lib/constants.js';
 import { PROJECTS } from '../../lib/projects.js';
+import { LiquidFill, liquidInk, LIQUID_INK_TRANSITION } from './liquidHover.jsx';
 
 const LINK_CLASS = [
   'font-display font-extrabold uppercase leading-[110%]',
@@ -69,17 +70,24 @@ export default function MenuOverlay({ open, onClose }) {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <button
+      <motion.button
         type="button"
         onClick={onClose}
-        className="glass absolute rounded-full px-[18px] py-[10px] font-body uppercase text-[length:var(--fs-micro)] tracking-[0.08em] cursor-pointer text-white focus-visible:[outline:2px_solid_var(--red)] focus-visible:[outline-offset:2px]"
+        initial="rest"
+        animate="rest"
+        whileHover="hover"
+        whileTap="tap"
+        className="glass absolute overflow-hidden rounded-full px-[18px] py-[10px] font-body uppercase text-[length:var(--fs-micro)] tracking-[0.08em] cursor-pointer text-white focus-visible:[outline:2px_solid_var(--red)] focus-visible:[outline-offset:2px]"
         style={{
           top: 'calc(var(--top-header) + env(safe-area-inset-top))',
           right: 'var(--pad-header)',
         }}
       >
-        Close
-      </button>
+        <LiquidFill from="right" scale="sm" />
+        <motion.span className="relative" variants={liquidInk} transition={LIQUID_INK_TRANSITION}>
+          Close
+        </motion.span>
+      </motion.button>
 
       <motion.nav
         className="flex min-h-full flex-col justify-center gap-[2.2vw]"
