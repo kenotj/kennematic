@@ -1,43 +1,38 @@
 'use client';
 
-/* KENNEMATIC — the about paragraph.
+/* KENNEMATIC — the services strip.
  *
- * rise contract:
- *   opacity   : in
- *   transform : translateY((1 - in) * --rise-y)   with --rise-y = 2em
- *   filter    : blur((1 - in)² * 5px) while `.is-anim` (0 < in < 1)  ← SQUARED
- *   `.is-hidden` (visibility:hidden) once in <= 0
- *
- * The rise distance is 2*em*, i.e. relative to this element's own --fs-ui font
- * size, so it cannot be expressed as framer-motion's numeric `y` (px). The
- * transform itself is therefore a MotionValue that emits em units, keeping
- * ownership with framer-motion while preserving the legacy geometry.
+ * Same rise contract as About.jsx (opacity, translateY in em, squared blur
+ * while `.is-anim`, `.is-hidden` once in <= 0) — see that file for the why of
+ * each piece. Timing lives in SERVICES_IN / SERVICES_OUT: the dead window
+ * between the title's exit (~0.083) and About's entrance (0.18), so it shares
+ * About's screen position without ever coexisting with it.
  */
 
 import { useEffect, useRef } from 'react';
 import { motion, useMotionValue, useTransform } from 'framer-motion';
 
 import { usePlate } from '../lib/plate.jsx';
-import { ABOUT_IN, ABOUT_OUT } from '../lib/constants.js';
+import { SERVICES, SERVICES_IN, SERVICES_OUT } from '../lib/constants.js';
 import { expoOut, norm, r3, quantize } from '../lib/easing.js';
 
 const RISE_Y = 2; // em
 const RISE_BLUR = 5; // px
 const BLUR_STEP = 0.25; // px
 
-const COPY =
-  'AI-made, human-directed. I direct films and advert content built with generative video — where taste, timing and the edit still decide everything.';
+/* Names only here — the blurbs belong to the pinned services block in
+   Works.jsx. Both read the same list so they can't drift apart. */
 
-export default function About() {
+export default function Services() {
   const { progress, reduced } = usePlate();
   const ref = useRef(null);
 
   const inV = useTransform(progress, (p) => {
     let e;
-    if (p < ABOUT_IN[0]) e = 0;
-    else if (p < ABOUT_IN[1]) e = expoOut(norm(p, ABOUT_IN[0], ABOUT_IN[1]));
-    else if (p < ABOUT_OUT[0]) e = 1;
-    else if (p < ABOUT_OUT[1]) e = 1 - expoOut(norm(p, ABOUT_OUT[0], ABOUT_OUT[1]));
+    if (p < SERVICES_IN[0]) e = 0;
+    else if (p < SERVICES_IN[1]) e = expoOut(norm(p, SERVICES_IN[0], SERVICES_IN[1]));
+    else if (p < SERVICES_OUT[0]) e = 1;
+    else if (p < SERVICES_OUT[1]) e = 1 - expoOut(norm(p, SERVICES_OUT[0], SERVICES_OUT[1]));
     else e = 0;
     return r3(e);
   });
@@ -80,9 +75,9 @@ export default function About() {
   }, [inV]);
 
   return (
-    <motion.p
+    <motion.div
       ref={ref}
-      className="about rise absolute font-body font-medium text-ui"
+      className="services rise absolute font-body font-medium text-ui"
       style={{
         left: 'max(20px,3.9456vw)',
         bottom: 'max(16px,6.9038vh)',
@@ -94,7 +89,12 @@ export default function About() {
         visibility,
       }}
     >
-      {COPY}
-    </motion.p>
+      <p className="m-0 uppercase text-[length:var(--fs-micro)] opacity-70">What I do</p>
+      <ul className="m-0 mt-[0.6em] list-none p-0 leading-[150%]">
+        {SERVICES.map((s) => (
+          <li key={s.name}>{s.name}</li>
+        ))}
+      </ul>
+    </motion.div>
   );
 }

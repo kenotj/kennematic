@@ -59,6 +59,11 @@ function emptyBlock() {
   return { top: 0, height: 0 };
 }
 
+/* Every block of the works strip that measure() caches. `title`, `cta` and
+   `list` are the upper group (heading, view-all button, project cards);
+   `services` is the block the strip pins on. */
+const BLOCK_KEYS = ['title', 'cta', 'list', 'services'];
+
 export function PlateProvider({ children }) {
   const { scrollY } = useScroll();
   const progress = useMotionValue(0);
@@ -79,12 +84,7 @@ export function PlateProvider({ children }) {
       wipe: 0.1,
       s2Start: 0,
       s2Pin: 0,
-      blocks: {
-        title: emptyBlock(),
-        desc1: emptyBlock(),
-        list: emptyBlock(),
-        desc2: emptyBlock(),
-      },
+      blocks: Object.fromEntries(BLOCK_KEYS.map((k) => [k, emptyBlock()])),
       /* filled in below */
       registerBlocks: null,
       subscribe: null,
@@ -94,7 +94,7 @@ export function PlateProvider({ children }) {
   const metrics = metricsRef.current;
 
   /* registered element refs for the works strip */
-  const blockRefs = useRef({ title: null, desc1: null, list: null, desc2: null });
+  const blockRefs = useRef(Object.fromEntries(BLOCK_KEYS.map((k) => [k, null])));
   const subs = useRef(new Set());
 
   /* -------------------------------------------------------------- measure */
@@ -118,7 +118,7 @@ export function PlateProvider({ children }) {
       /* --- works blocks: the ONLY place offsetTop/offsetHeight is read --- */
       const b = metrics.blocks;
       let any = false;
-      for (const key of ['title', 'desc1', 'list', 'desc2']) {
+      for (const key of BLOCK_KEYS) {
         const node = el(blockRefs.current[key]);
         if (node) {
           b[key].top = node.offsetTop;
@@ -132,11 +132,11 @@ export function PlateProvider({ children }) {
 
       if (any) {
         const titleTop = b.title.top;
-        const groupTop = Math.min(b.list.top, b.desc2.top);
-        const groupBottom = Math.max(
-          b.list.top + b.list.height,
-          b.desc2.top + b.desc2.height
-        );
+        /* The strip pins on the services block; a render without one falls
+           back to the card list. */
+        const pinned = b.services.height > 0 ? [b.services] : [b.list];
+        const groupTop = Math.min(...pinned.map((x) => x.top));
+        const groupBottom = Math.max(...pinned.map((x) => x.top + x.height));
         const groupCenter = (groupTop + groupBottom) / 2;
 
         metrics.s2Pin = PIN_FRAC * vh - groupCenter;
@@ -166,12 +166,12 @@ export function PlateProvider({ children }) {
     };
     metrics.registerBlocks = (refs) => {
       if (!refs) return;
-      for (const key of ['title', 'desc1', 'list', 'desc2']) {
+      for (const key of BLOCK_KEYS) {
         if (key in refs) blockRefs.current[key] = refs[key];
       }
       measureRef.current();
       return () => {
-        for (const key of ['title', 'desc1', 'list', 'desc2']) {
+        for (const key of BLOCK_KEYS) {
           if (key in refs && blockRefs.current[key] === refs[key]) {
             blockRefs.current[key] = null;
           }

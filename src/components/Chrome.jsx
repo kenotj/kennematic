@@ -1,6 +1,6 @@
 'use client';
 
-/* PLATE® — fixed chrome layer.
+/* KENNEMATIC — fixed chrome layer.
  *
  * The `perspective` here is load-bearing: `.exit-3d` blocks translate on +Z and
  * the perspective origin (default 50% 50% of this fixed, inset-0 box = viewport
@@ -11,7 +11,9 @@
 import Header from './Header.jsx';
 import Title from './Title.jsx';
 import About from './About.jsx';
+import Services from './Services.jsx';
 import Stats from './Stats.jsx';
+import Contact from './Contact.jsx';
 
 export default function Chrome() {
   return (
@@ -22,7 +24,9 @@ export default function Chrome() {
       <Header />
       <Title />
       <About />
+      <Services />
       <Stats />
+      <Contact />
     </div>
   );
 }

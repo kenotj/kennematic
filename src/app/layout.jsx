@@ -1,8 +1,21 @@
+import { Montserrat } from 'next/font/google';
+
 import './globals.css';
+import { LiquidDefs } from '../components/site/liquidHover.jsx';
+
+/* Variable font: omitting `weight` loads the full 100–900 axis in both styles.
+ * The family name next/font generates is hashed — components must reach it
+ * through the --font-montserrat variable, never a literal 'Montserrat'. */
+const montserrat = Montserrat({
+  subsets: ['latin'],
+  style: ['normal', 'italic'],
+  variable: '--font-montserrat',
+  display: 'swap',
+});
 
 export const metadata = {
-  title: 'PLATE',
-  description: 'PLATE',
+  title: 'KENNEMATIC',
+  description: 'KENNEMATIC — Kenneth Ong, AI director. Films and advert content made with generative video.',
 };
 
 export const viewport = {
@@ -25,17 +38,16 @@ const JS_CLASS = "document.documentElement.classList.add('js')";
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={montserrat.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: JS_CLASS }} />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=BBH+Bartle&family=Alex+Brush&family=Inter+Tight:wght@400;500&display=swap"
-        />
       </head>
-      <body>{children}</body>
+      <body>
+        {/* The goo filters every LiquidFill references. Defined once at the
+            root so the ids resolve on every route. */}
+        <LiquidDefs />
+        {children}
+      </body>
     </html>
   );
 }

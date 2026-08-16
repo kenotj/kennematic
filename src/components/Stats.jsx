@@ -1,6 +1,6 @@
 'use client';
 
-/* PLATE® — the three counters.
+/* KENNEMATIC — the three counters.
  *
  * They reuse Title's exit-3d contract, but with --exit-z 464px rather than
  * 680px. That is measured, not arbitrary: the stat block sits 81px lower in the
@@ -93,7 +93,7 @@ function Stat({ index, label, num }) {
     >
       <dt className="stat__label font-body text-ui uppercase">{label}</dt>
       {/* the parentheses are part of the copy, not decoration */}
-      <dd className="stat__num font-script text-stat">{num}</dd>
+      <dd className="stat__num type-accent text-stat">{num}</dd>
     </motion.dl>
   );
 }
