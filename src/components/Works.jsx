@@ -13,22 +13,23 @@
  *
  * The strip reads as two screens:
  *
- *   1. title + view-all button + the four project cards — everything about the
- *      featured work, together, riding up as the strip lifts.
+ *   1. the featured group — centred heading, the four project cards, then the
+ *      view-all button under them — everything about the featured work, in one
+ *      flow column. It rises in, HOLDS still for a beat (HOLD_FRAC, see
+ *      plate.jsx measure()), then lifts away.
  *   2. the services block, which is what the strip PINS on (PIN_FRAC of the
  *      viewport, see plate.jsx measure()).
  *
- * Both groups stay short on purpose: the reading band dims any block taller
- * than roughly vh − BAND_HL − BAND_TOP − BAND_BOT, so a block that grows a
- * couple of rows would never reach full opacity on short viewports.
- *
- * The list is a single filmstrip row of four glass cards.
+ * The list is a 2x2 grid of glass cards with 16:9 thumbs, which makes the
+ * featured group about a screen tall. Two consequences, both handled below:
+ * the group is sized against the viewport HEIGHT as well as its width (see the
+ * wrapper), and it reads the reading band as one box rather than per block.
  *
  * Cards are links to /projects/[slug]. The root keeps pointer-events-none;
  * only the anchors opt back in, and a fully flown card drops out of
  * hit-testing via `.is-flown` (globals.css) because ±62vw does not clear the
- * viewport. Fly direction: left pair flies left, right pair flies right,
- * staggered within each pair.
+ * viewport. Fly direction: the left column flies left, the right column right,
+ * the top row leading the bottom.
  */
 
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
@@ -37,10 +38,11 @@ import { motion, useMotionValue, useTransform } from 'framer-motion';
 import TransitionLink from './site/TransitionLink.jsx';
 import { LiquidFill, liquidInk, LIQUID_INK_TRANSITION } from './site/liquidHover.jsx';
 import { usePlate } from '../lib/plate.jsx';
-import { clamp01, expoOut, easeIn, norm, r3, quantize } from '../lib/easing.js';
+import { clamp01, expoOut, easeIn, norm, r3, quantize, smoothstep } from '../lib/easing.js';
 import {
   SEC2_SHOW,
   SEC2_RAMP,
+  SEC2_LIFT,
   SEC2_ENTER,
   FLY,
   FLY_STEP,
@@ -77,9 +79,11 @@ function thumbGradient(str) {
 
 function Card({ item, index, progress, metrics, version, reduced }) {
   const ref = useRef(null);
-  /* left pair flies left, right pair right; stagger index is WITHIN the pair */
-  const dir = index < 2 ? -1 : 1;
-  const k = index % 2;
+  /* 2x2 grid: the left COLUMN flies left and the right column flies right, so
+     the split follows the seam the reader sees; the stagger index is the ROW,
+     so the top pair leaves ahead of the bottom pair. */
+  const dir = index % 2 === 0 ? -1 : 1;
+  const k = index < 2 ? 0 : 1;
 
   /* raw fly amount 0..1 — shared shape for x / opacity / blur */
   const fly = useTransform(progress, (p) => {
@@ -113,7 +117,7 @@ function Card({ item, index, progress, metrics, version, reduced }) {
   const hover = reduced ? undefined : 'hover';
 
   return (
-    <motion.div ref={ref} className="w-row min-w-0 flex-1" style={{ x, opacity, filter }}>
+    <motion.div ref={ref} className="w-row min-w-0" style={{ x, opacity, filter }}>
       <TransitionLink
         href={`/projects/${item.slug}`}
         className={[
@@ -165,10 +169,11 @@ function Card({ item, index, progress, metrics, version, reduced }) {
             <p className="m-0 text-[length:var(--fs-micro)] uppercase tracking-[0.1em] opacity-70 whitespace-nowrap overflow-hidden text-ellipsis">
               {item.category} · {item.year}
             </p>
-            {/* clamp + min-height keep the four cards the same height whether
-                a title runs one line or two */}
+            {/* line-clamp still caps a long title at two lines; the min-height
+                floor is only there so a one-line title doesn't sit tight
+                against the card edge — the grid equalises the row itself. */}
             <motion.p
-              className="m-0 mt-[0.25vw] flex min-h-[2.3em] items-start gap-[0.4vw] text-[length:var(--fs-ui)] font-semibold leading-[115%]"
+              className="m-0 mt-[0.25vw] flex min-h-[1.25em] items-start gap-[0.4vw] text-[length:var(--fs-ui)] font-semibold leading-[115%]"
               variants={{ rest: { x: 0 }, hover: { x: 4 }, tap: { x: 4 } }}
               transition={{ type: 'spring', stiffness: 320, damping: 26 }}
             >
@@ -261,10 +266,18 @@ export default function Works() {
 
   /* ------------------------------------------------------------- strip y */
 
+  /* Two moves, one hold. The second term only leaves 0 once the first has
+     saturated (SEC2_RAMP[1] <= SEC2_LIFT[0]), so between them the strip is
+     genuinely stationary and the featured group holds for the reader. */
   const s2y = useTransform([progress, version], ([p]) => {
     if (reduced) return metrics.s2Pin;
-    const t = clamp01(norm(p, SEC2_RAMP[0], SEC2_RAMP[1]));
-    return r3(metrics.s2Start + (metrics.s2Pin - metrics.s2Start) * t);
+    const rise = smoothstep(norm(p, SEC2_RAMP[0], SEC2_RAMP[1]));
+    const lift = smoothstep(norm(p, SEC2_LIFT[0], SEC2_LIFT[1]));
+    return r3(
+      metrics.s2Start +
+        (metrics.s2Hold - metrics.s2Start) * rise +
+        (metrics.s2Pin - metrics.s2Hold) * lift
+    );
   });
 
   /* ---------------------------------------------------- visibility gate */
@@ -292,22 +305,41 @@ export default function Works() {
       const b = metrics.blocks[key];
       const top = b.top + s2yPx;
       const bottom = top + b.height;
+      /* The band was tuned for half-screen blocks: full opacity wants
+         BAND_HL + BAND_TOP of headroom and BAND_BOT of footroom, so a block
+         taller than vh minus that sum could never light — and the featured
+         group IS taller than it now. When a block doesn't fit, each side's
+         ramp is scaled to the slack that side actually gets (half of what's
+         left over), which makes a centred tall block peak at exactly 1 rather
+         than sitting permanently dimmed. A block that fits keeps the original
+         numbers untouched, so the services pin is unaffected. */
+      const slack = Math.max(0, metrics.vh - b.height);
+      const fits = slack >= BAND_HL + BAND_TOP + BAND_BOT;
+      const half = slack / 2;
+      const squeeze = fits ? 1 : Math.min(1, half / (BAND_HL + BAND_TOP));
+      const hl = BAND_HL * squeeze;
+      /* both ramps floor at 1px: a block exactly as tall as the viewport has no
+         slack at all, and a zero-length ramp would divide to NaN */
+      const upRamp = Math.max(1, BAND_TOP * squeeze);
+      const downRamp = Math.max(1, fits ? BAND_BOT : Math.min(BAND_BOT, half));
       return clamp01(
         Math.min(
-          expoOut(clamp01((top - BAND_HL) / BAND_TOP)),
-          expoOut(clamp01((metrics.vh - bottom) / BAND_BOT))
+          expoOut(clamp01((top - hl) / upRamp)),
+          expoOut(clamp01((metrics.vh - bottom) / downRamp))
         )
       );
     };
   }, [metrics]);
 
-  const ctaOpacity = useTransform([s2y, version], ([y]) => r3(band('cta', y)));
-  const listOpacity = useTransform([s2y, version], ([y]) => r3(band('list', y)));
+  /* Heading, cards and button all read the GROUP's band, not their own: they
+     are one composed screen now, and banding them separately would fade the
+     button out while the heading above it was still bright. */
+  const groupOpacity = useTransform([s2y, version], ([y]) => r3(band('group', y)));
   const servicesOpacity = useTransform([s2y, version], ([y]) => r3(band('services', y)));
 
   /* Title carries the extra SEC2_ENTER fade on top of the band. */
   const titleRaw = useTransform([s2y, progress, version], ([y, p]) =>
-    clamp01(band('title', y) * expoOut(norm(p, SEC2_ENTER[0], SEC2_ENTER[1])))
+    clamp01(band('group', y) * expoOut(norm(p, SEC2_ENTER[0], SEC2_ENTER[1])))
   );
   const titleOpacity = useTransform(titleRaw, r3);
   const titleFilter = useTransform(titleRaw, (o) =>
@@ -339,93 +371,111 @@ export default function Works() {
         className="strip absolute top-0 left-0 w-[100vw] will-change-transform"
         style={{ y: s2y }}
       >
-        <motion.div
-          ref={titleRef}
-          data-block=""
-          className="w-title absolute left-[3.5374vw] top-[22.9252vw] w-[38.3673vw] flex flex-col gap-[1.6327vw]"
-          style={{ opacity: titleOpacity, filter: titleFilter }}
-        >
-          <p className="w-eyebrow text-[length:var(--fs-micro)] uppercase leading-[100%]">
-            Featured projects
-          </p>
-          {/* each word rides its own slice of the enter progress — kinetic,
-              but still fully scroll-scrubbed and reversible */}
-          <h2 className="w-mark font-display font-extrabold text-[length:var(--fs-work)] leading-[100%]">
-            <KineticWord text="Made" enter={titleRaw} index={0} reduced={reduced} />{' '}
-            <KineticWord text="to" enter={titleRaw} index={1} reduced={reduced} />{' '}
-            <KineticWord text="move" enter={titleRaw} index={2} reduced={reduced} />{' '}
-            <KineticWord text="(really)" enter={titleRaw} index={3} accent reduced={reduced} />
-          </h2>
-        </motion.div>
+        {/* The featured group — heading, the 2x2 card grid, view-all — as ONE
+            centred flow column, in reading order. The wrapper is deliberately
+            unpositioned: measure() reads each block's offsetTop expecting
+            `.strip` to be the offsetParent, so a `relative`/`absolute` wrapper
+            here would silently re-base every block top and break the reading
+            band. The padding-top (not a `top`) is what holds the heading at its
+            old 22.9252vw, which is where s2Start is anchored.
 
-        {/* The view-all button. It shares the card row's width and box so
-            `justify-end` lands its right edge exactly on the right edge of the
-            last card, rather than on the page gutter. */}
-        <motion.div
-          ref={ctaRef}
-          data-block=""
-          className="w-cta absolute left-[50%] top-[25vw] flex w-[64.2857vw] -translate-x-1/2 justify-end"
-          style={{ opacity: ctaOpacity }}
-        >
-          <TransitionLink
-            href="/projects"
-            className="pointer-events-auto rounded-full focus-visible:[outline:2px_solid_var(--red)] focus-visible:[outline-offset:4px]"
+            Width: two rows of 16:9 thumbs make the group about a screen tall,
+            and every part of it is sized in vw — so on a short or ultrawide
+            viewport a flat 46vw grid would run off the bottom. Summing the
+            column at a grid width G gives a group height of 22.44vw + 0.5625G;
+            holding that to 88% of the viewport height solves to
+            G <= 1.564*vh - 39.9vw, which is the second term. It only binds
+            below roughly 16:9 — at 16:9 and taller the 46vw cap wins. The 26vw
+            floor is a backstop: on an extreme aspect the group overflows rather
+            than collapsing to nothing. */}
+        <div className="w-group mx-auto flex w-[min(46vw,max(26vw,calc(156vh_-_39.9vw)))] flex-col items-center pt-[22.9252vw]">
+          <motion.div
+            ref={titleRef}
+            data-block=""
+            className="w-title flex w-full flex-col items-center gap-[1.1vw] text-center"
+            style={{ opacity: titleOpacity, filter: titleFilter }}
           >
-            <motion.span
-              className="glass relative flex items-center gap-[0.5vw] overflow-hidden rounded-full px-[1.1vw] py-[0.6vw] text-[length:var(--fs-micro)] font-semibold uppercase tracking-[0.08em] leading-[100%]"
-              initial="rest"
-              animate="rest"
-              whileHover={reduced ? undefined : 'hover'}
-              whileTap={reduced ? undefined : 'tap'}
-              variants={{
-                rest: { y: 0, scale: 1 },
-                hover: { y: -4, scale: 1.04 },
-                tap: { y: 0, scale: 0.97 },
-              }}
-              transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+            <p className="w-eyebrow text-[length:var(--fs-micro)] uppercase leading-[100%]">
+              Featured projects
+            </p>
+            {/* each word rides its own slice of the enter progress — kinetic,
+                but still fully scroll-scrubbed and reversible */}
+            <h2 className="w-mark font-display font-extrabold text-[length:var(--fs-work)] leading-[100%]">
+              <KineticWord text="Made" enter={titleRaw} index={0} reduced={reduced} />{' '}
+              <KineticWord text="to" enter={titleRaw} index={1} reduced={reduced} />{' '}
+              <KineticWord text="move" enter={titleRaw} index={2} reduced={reduced} />{' '}
+              <KineticWord text="(really)" enter={titleRaw} index={3} accent reduced={reduced} />
+            </h2>
+          </motion.div>
+
+          <motion.div
+            ref={listRef}
+            data-block=""
+            className="w-list mt-[2vw] grid w-full grid-cols-2 gap-[1.6vw]"
+            style={{ opacity: groupOpacity }}
+          >
+            {PROJECTS.map((item, i) => (
+              <Card
+                key={item.slug}
+                item={item}
+                index={i}
+                progress={progress}
+                metrics={metrics}
+                version={version}
+                reduced={reduced}
+              />
+            ))}
+          </motion.div>
+
+          {/* The view-all button, centred under the card row — the last beat of
+              the group, read after the work it opens out to. */}
+          <motion.div
+            ref={ctaRef}
+            data-block=""
+            className="w-cta mt-[1.6vw] flex w-full justify-center"
+            style={{ opacity: groupOpacity }}
+          >
+            <TransitionLink
+              href="/projects"
+              className="pointer-events-auto rounded-full focus-visible:[outline:2px_solid_var(--red)] focus-visible:[outline-offset:4px]"
             >
-              <LiquidFill scale="sm" />
               <motion.span
-                className="relative"
-                variants={liquidInk}
-                transition={LIQUID_INK_TRANSITION}
-              >
-                View all projects
-              </motion.span>
-              <motion.span
-                aria-hidden="true"
-                className="relative"
+                className="glass relative flex items-center gap-[0.5vw] overflow-hidden rounded-full px-[1.1vw] py-[0.6vw] text-[length:var(--fs-micro)] font-semibold uppercase tracking-[0.08em] leading-[100%]"
+                initial="rest"
+                animate="rest"
+                whileHover={reduced ? undefined : 'hover'}
+                whileTap={reduced ? undefined : 'tap'}
                 variants={{
-                  rest: { x: 0, color: 'rgb(255,255,255)' },
-                  hover: { x: 6, color: 'rgb(0,0,0)' },
-                  tap: { x: 6, color: 'rgb(0,0,0)' },
+                  rest: { y: 0, scale: 1 },
+                  hover: { y: -4, scale: 1.04 },
+                  tap: { y: 0, scale: 0.97 },
                 }}
                 transition={{ type: 'spring', stiffness: 320, damping: 26 }}
               >
-                →
+                <LiquidFill scale="sm" />
+                <motion.span
+                  className="relative"
+                  variants={liquidInk}
+                  transition={LIQUID_INK_TRANSITION}
+                >
+                  View all projects
+                </motion.span>
+                <motion.span
+                  aria-hidden="true"
+                  className="relative"
+                  variants={{
+                    rest: { x: 0, color: 'rgb(255,255,255)' },
+                    hover: { x: 6, color: 'rgb(0,0,0)' },
+                    tap: { x: 6, color: 'rgb(0,0,0)' },
+                  }}
+                  transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+                >
+                  →
+                </motion.span>
               </motion.span>
-            </motion.span>
-          </TransitionLink>
-        </motion.div>
-
-        <motion.div
-          ref={listRef}
-          data-block=""
-          className="w-list absolute top-[31vw] left-[50%] w-[64.2857vw] -translate-x-1/2 flex flex-row items-stretch gap-[1.8vw]"
-          style={{ opacity: listOpacity }}
-        >
-          {PROJECTS.map((item, i) => (
-            <Card
-              key={item.slug}
-              item={item}
-              index={i}
-              progress={progress}
-              metrics={metrics}
-              version={version}
-              reduced={reduced}
-            />
-          ))}
-        </motion.div>
+            </TransitionLink>
+          </motion.div>
+        </div>
 
         {/* The pinned block. Two columns on purpose — four stacked rows would
             push it past the reading band's height ceiling on a 16:9 viewport

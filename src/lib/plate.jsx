@@ -26,6 +26,7 @@ import { clamp01 } from './easing.js';
 import {
   WIPE_VH,
   PIN_FRAC,
+  HOLD_FRAC,
   S2_EMERGE,
   A,
   B,
@@ -59,10 +60,16 @@ function emptyBlock() {
   return { top: 0, height: 0 };
 }
 
-/* Every block of the works strip that measure() caches. `title`, `cta` and
-   `list` are the upper group (heading, view-all button, project cards);
-   `services` is the block the strip pins on. */
-const BLOCK_KEYS = ['title', 'cta', 'list', 'services'];
+/* Every block of the works strip that Works.jsx registers an element for.
+   `title`, `cta` and `list` are the featured group (heading, project cards,
+   view-all button); `services` is the block the strip pins on. */
+const REGISTERED_KEYS = ['title', 'cta', 'list', 'services'];
+
+/* `group` is derived, not registered: the union box of the three featured
+   blocks. The group is now close to a full screen tall, so it enters and
+   leaves the reading band as ONE composed screen rather than as three blocks
+   that would each cross the band's edges at different moments. */
+const BLOCK_KEYS = [...REGISTERED_KEYS, 'group'];
 
 export function PlateProvider({ children }) {
   const { scrollY } = useScroll();
@@ -83,6 +90,7 @@ export function PlateProvider({ children }) {
       runwayPx: 1,
       wipe: 0.1,
       s2Start: 0,
+      s2Hold: 0,
       s2Pin: 0,
       blocks: Object.fromEntries(BLOCK_KEYS.map((k) => [k, emptyBlock()])),
       /* filled in below */
@@ -118,7 +126,7 @@ export function PlateProvider({ children }) {
       /* --- works blocks: the ONLY place offsetTop/offsetHeight is read --- */
       const b = metrics.blocks;
       let any = false;
-      for (const key of BLOCK_KEYS) {
+      for (const key of REGISTERED_KEYS) {
         const node = el(blockRefs.current[key]);
         if (node) {
           b[key].top = node.offsetTop;
@@ -128,6 +136,17 @@ export function PlateProvider({ children }) {
           b[key].top = 0;
           b[key].height = 0;
         }
+      }
+
+      /* derived: the featured group's union box */
+      const upper = [b.title, b.list, b.cta].filter((x) => x.height > 0);
+      if (upper.length) {
+        b.group.top = Math.min(...upper.map((x) => x.top));
+        b.group.height =
+          Math.max(...upper.map((x) => x.top + x.height)) - b.group.top;
+      } else {
+        b.group.top = 0;
+        b.group.height = 0;
       }
 
       if (any) {
@@ -141,6 +160,20 @@ export function PlateProvider({ children }) {
 
         metrics.s2Pin = PIN_FRAC * vh - groupCenter;
         metrics.s2Start = S2_EMERGE * vh - titleTop;
+
+        /* The hold: the featured group (title + cta + cards) centred at
+           HOLD_FRAC. Clamped into [s2Pin, s2Start] so the two moves stay
+           monotonic — on a viewport too short to frame the group, the hold
+           collapses onto an end of the travel rather than reversing it. */
+        if (b.group.height > 0) {
+          const groupCentre = b.group.top + b.group.height / 2;
+          metrics.s2Hold = Math.min(
+            metrics.s2Start,
+            Math.max(metrics.s2Pin, HOLD_FRAC * vh - groupCentre)
+          );
+        } else {
+          metrics.s2Hold = metrics.s2Start;
+        }
       }
 
       /* keep progress honest after a runway change */
@@ -166,12 +199,12 @@ export function PlateProvider({ children }) {
     };
     metrics.registerBlocks = (refs) => {
       if (!refs) return;
-      for (const key of BLOCK_KEYS) {
+      for (const key of REGISTERED_KEYS) {
         if (key in refs) blockRefs.current[key] = refs[key];
       }
       measureRef.current();
       return () => {
-        for (const key of BLOCK_KEYS) {
+        for (const key of REGISTERED_KEYS) {
           if (key in refs && blockRefs.current[key] === refs[key]) {
             blockRefs.current[key] = null;
           }

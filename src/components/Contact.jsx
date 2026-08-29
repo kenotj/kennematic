@@ -20,12 +20,9 @@ const RISE_Y = 2; // em
 const RISE_BLUR = 5; // px
 const BLUR_STEP = 0.25; // px
 
-/* Placeholder socials — swap hrefs for real profiles. */
-const SOCIALS = [
-  { label: 'Instagram', href: 'https://instagram.com' },
-  { label: 'Vimeo', href: 'https://vimeo.com' },
-  { label: 'LinkedIn', href: 'https://linkedin.com' },
-];
+/* Still a list, and the row still gaps, so adding a second profile back is a
+   one-line change. */
+const SOCIALS = [{ label: 'Instagram', href: 'https://www.instagram.com/kennematic' }];
 
 const LINK_CLASS = [
   'pointer-events-auto underline',
