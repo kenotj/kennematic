@@ -16,23 +16,24 @@
 
   /* type scale (raw legacy names) — every step runs at 80% of the legacy vw
      value EXCEPT display (the KENNEMATIC master heading, kept full size).
-     The px floors are untouched, so small screens read exactly as before. */
-  --fs-display: 12.4vw;
-  --fs-stat: 5.4422vw;
-  --fs-work: max(24px, 2.7211vw);
-  --fs-ui: max(13px, 1.6327vw);
-  --fs-micro: max(11px, 0.8163vw);
+     Every step floors at 9px, so type keeps shrinking with the viewport down
+     to the smallest legible size instead of locking at a larger step. */
+  --fs-display: max(9px, 12.4vw);
+  --fs-stat: max(9px, 5.4422vw);
+  --fs-work: max(9px, 2.7211vw);
+  --fs-ui: max(9px, 1.6327vw);
+  --fs-micro: max(9px, 0.8163vw);
 
   /* type scale (Tailwind font-size utilities: text-display, text-stat, …) */
-  --text-display: 12.4vw;
+  --text-display: max(9px, 12.4vw);
   --text-display--line-height: 100%;
-  --text-stat: 5.4422vw;
+  --text-stat: max(9px, 5.4422vw);
   --text-stat--line-height: 100%;
-  --text-work: max(24px, 2.7211vw);
+  --text-work: max(9px, 2.7211vw);
   --text-work--line-height: 100%;
-  --text-ui: max(13px, 1.6327vw);
+  --text-ui: max(9px, 1.6327vw);
   --text-ui--line-height: 100%;
-  --text-micro: max(11px, 0.8163vw);
+  --text-micro: max(9px, 0.8163vw);
   --text-micro--line-height: 100%;
 
   /* spacing */
@@ -96,17 +97,17 @@
    quieter than the landing's choreography. Put this on the page's <main>;
    the fixed header/breadcrumb sits outside it and keeps the global size.
    Both the raw --fs-* names and the --text-* utility vars are overridden so
-   `text-stat` and `text-[length:var(--fs-ui)]` shrink alike. The px floors
-   stay, so small screens are untouched. */
+   `text-stat` and `text-[length:var(--fs-ui)]` shrink alike. The 9px floor
+   matches the global scale. */
 .type-sub {
-  --fs-stat: 4.3537vw;
-  --fs-work: max(24px, 2.1769vw);
-  --fs-ui: max(13px, 1.3061vw);
-  --fs-micro: max(11px, 0.6531vw);
-  --text-stat: 4.3537vw;
-  --text-work: max(24px, 2.1769vw);
-  --text-ui: max(13px, 1.3061vw);
-  --text-micro: max(11px, 0.6531vw);
+  --fs-stat: max(9px, 4.3537vw);
+  --fs-work: max(9px, 2.1769vw);
+  --fs-ui: max(9px, 1.3061vw);
+  --fs-micro: max(9px, 0.6531vw);
+  --text-stat: max(9px, 4.3537vw);
+  --text-work: max(9px, 2.1769vw);
+  --text-ui: max(9px, 1.3061vw);
+  --text-micro: max(9px, 0.6531vw);
 }
 
 /* ---------- case study ---------- */
