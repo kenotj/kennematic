@@ -1,4 +1,9 @@
-/* KENNEMATIC — project data.
+/* KENNEMATIC — seed / fallback project data.
+ *
+ * Canonical content now lives in the Neon `projects` table (see lib/db.js and
+ * scripts/db-setup.mjs, which seeds the table from this file). This array is
+ * the local fallback when DATABASE_URL is unset, so dev works before the DB
+ * exists.
  *
  * One flat array feeds both surfaces:
  *   - the landing "Featured projects" card strip (all four, in order)
@@ -13,7 +18,7 @@
  * AT MOST 3 CARDS PER HALF — 6 total. Beyond that, extras never finish flying.
  */
 
-export const PROJECTS = [
+export const SEED_PROJECTS = [
   {
     slug: 'synthetic-parfum-spot',
     title: 'Parfum spot',
@@ -130,4 +135,3 @@ export const PROJECTS = [
   },
 ];
 
-export const getProject = (slug) => PROJECTS.find((p) => p.slug === slug);

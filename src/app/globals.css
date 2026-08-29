@@ -14,23 +14,25 @@
   --color-red: #EB0004;
   --red: #EB0004;
 
-  /* type scale (raw legacy names) */
+  /* type scale (raw legacy names) — every step runs at 80% of the legacy vw
+     value EXCEPT display (the KENNEMATIC master heading, kept full size).
+     The px floors are untouched, so small screens read exactly as before. */
   --fs-display: 12.4vw;
-  --fs-stat: 6.8027vw;
-  --fs-work: max(24px, 3.4014vw);
-  --fs-ui: max(13px, 2.0408vw);
-  --fs-micro: max(11px, 1.0204vw);
+  --fs-stat: 5.4422vw;
+  --fs-work: max(24px, 2.7211vw);
+  --fs-ui: max(13px, 1.6327vw);
+  --fs-micro: max(11px, 0.8163vw);
 
   /* type scale (Tailwind font-size utilities: text-display, text-stat, …) */
   --text-display: 12.4vw;
   --text-display--line-height: 100%;
-  --text-stat: 6.8027vw;
+  --text-stat: 5.4422vw;
   --text-stat--line-height: 100%;
-  --text-work: max(24px, 3.4014vw);
+  --text-work: max(24px, 2.7211vw);
   --text-work--line-height: 100%;
-  --text-ui: max(13px, 2.0408vw);
+  --text-ui: max(13px, 1.6327vw);
   --text-ui--line-height: 100%;
-  --text-micro: max(11px, 1.0204vw);
+  --text-micro: max(11px, 0.8163vw);
   --text-micro--line-height: 100%;
 
   /* spacing */

@@ -6,15 +6,15 @@ import { notFound } from 'next/navigation';
 
 import SiteHeader from '../../../components/site/SiteHeader.jsx';
 import MediaPlaceholder from '../../../components/site/MediaPlaceholder.jsx';
-import { PROJECTS, getProject } from '../../../lib/projects.js';
+import { getAllProjects, getProject } from '../../../lib/db.js';
 
-export function generateStaticParams() {
-  return PROJECTS.map((p) => ({ slug: p.slug }));
+export async function generateStaticParams() {
+  return (await getAllProjects()).map((p) => ({ slug: p.slug }));
 }
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
-  const project = getProject(slug);
+  const project = await getProject(slug);
   if (!project) return {};
   return {
     title: `${project.title} — ${project.client} · KENNEMATIC`,
@@ -24,12 +24,12 @@ export async function generateMetadata({ params }) {
 
 export default async function ProjectPage({ params }) {
   const { slug } = await params;
-  const project = getProject(slug);
+  const [project, projects] = await Promise.all([getProject(slug), getAllProjects()]);
   if (!project) notFound();
 
-  const index = PROJECTS.indexOf(project);
-  const prev = PROJECTS[(index - 1 + PROJECTS.length) % PROJECTS.length];
-  const next = PROJECTS[(index + 1) % PROJECTS.length];
+  const index = projects.findIndex((p) => p.slug === slug);
+  const prev = projects[(index - 1 + projects.length) % projects.length];
+  const next = projects[(index + 1) % projects.length];
 
   return (
     <>
@@ -67,9 +67,30 @@ export default async function ProjectPage({ params }) {
 
         {/* media */}
         <div className="mt-[max(48px,6vw)] grid gap-[max(16px,1.6327vw)] md:grid-cols-2">
-          {project.media.map((m) => (
-            <MediaPlaceholder key={m.label} label={m.label} ratio={m.ratio} />
-          ))}
+          {project.media.map((m) =>
+            m.url ? (
+              <figure
+                key={m.label}
+                className="m-0 overflow-hidden rounded-[2px]"
+                style={{ aspectRatio: m.ratio }}
+              >
+                {m.kind === 'video' ? (
+                  <video
+                    className="h-full w-full object-cover"
+                    src={m.url}
+                    poster={m.poster || undefined}
+                    controls
+                    playsInline
+                    preload="metadata"
+                  />
+                ) : (
+                  <img className="h-full w-full object-cover" src={m.url} alt={m.label} />
+                )}
+              </figure>
+            ) : (
+              <MediaPlaceholder key={m.label} label={m.label} ratio={m.ratio} />
+            ),
+          )}
         </div>
 
         {/* footer nav */}

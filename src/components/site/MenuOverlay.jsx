@@ -15,7 +15,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 
 import { CONTACT_EMAIL } from '../../lib/constants.js';
-import { PROJECTS } from '../../lib/projects.js';
+import { useProjects } from '../../lib/projectsContext.jsx';
 import { LiquidFill, liquidInk, LIQUID_INK_TRANSITION } from './liquidHover.jsx';
 
 const LINK_CLASS = [
@@ -69,6 +69,7 @@ const item = {
 };
 
 export default function MenuOverlay({ open, onClose }) {
+  const { projects } = useProjects();
   const [hovered, setHovered] = useState(null);
 
   /* Only set the active id per-link; clearing happens on the nav itself, so
@@ -146,7 +147,7 @@ export default function MenuOverlay({ open, onClose }) {
             </NavLabel>
           </Link>
           <div className="flex flex-col gap-[0.4vw] pl-[2vw]">
-            {PROJECTS.map((p) => (
+            {projects.map((p) => (
               <Link
                 key={p.slug}
                 href={`/projects/${p.slug}`}

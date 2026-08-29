@@ -3,6 +3,13 @@ import { Montserrat } from 'next/font/google';
 import './globals.css';
 import { LiquidDefs } from '../components/site/liquidHover.jsx';
 import RouteWatcher from '../components/site/RouteWatcher.jsx';
+import { ProjectsProvider } from '../lib/projectsContext.jsx';
+import { getAllProjects, getFeaturedProjects } from '../lib/db.js';
+
+/* Project content lives in Postgres; hourly ISR keeps every route static
+ * between edits. Editing the table + waiting out (or on-demand busting) this
+ * window is the whole publish flow. */
+export const revalidate = 3600;
 
 /* Variable font: omitting `weight` loads the full 100–900 axis in both styles.
  * The family name next/font generates is hashed — components must reach it
@@ -37,7 +44,8 @@ const JS_CLASS = "document.documentElement.classList.add('js')";
  * expected mismatch; it applies only to that element's own attributes and text,
  * not to its subtree. */
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const [projects, featured] = await Promise.all([getAllProjects(), getFeaturedProjects()]);
   return (
     <html lang="en" className={montserrat.variable} suppressHydrationWarning>
       <head>
@@ -49,7 +57,9 @@ export default function RootLayout({ children }) {
         <LiquidDefs />
         {/* Renders nothing; closes the view transition each route commit. */}
         <RouteWatcher />
-        {children}
+        <ProjectsProvider projects={projects} featured={featured}>
+          {children}
+        </ProjectsProvider>
       </body>
     </html>
   );

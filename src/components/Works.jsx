@@ -20,16 +20,16 @@
  *   2. the services block, which is what the strip PINS on (PIN_FRAC of the
  *      viewport, see plate.jsx measure()).
  *
- * The list is a 2x2 grid of glass cards with 16:9 thumbs, which makes the
- * featured group about a screen tall. Two consequences, both handled below:
- * the group is sized against the viewport HEIGHT as well as its width (see the
- * wrapper), and it reads the reading band as one box rather than per block.
+ * The list is a single row of four glass cards with 16:9 thumbs, sized to the
+ * same 64.2857vw measure as the services block so the two screens share
+ * left/right margins; the group reads the reading band as one box rather than
+ * per block.
  *
  * Cards are links to /projects/[slug]. The root keeps pointer-events-none;
  * only the anchors opt back in, and a fully flown card drops out of
  * hit-testing via `.is-flown` (globals.css) because ±62vw does not clear the
- * viewport. Fly direction: the left column flies left, the right column right,
- * the top row leading the bottom.
+ * viewport. Fly direction: the left pair flies left, the right pair right,
+ * the outer cards leading the inner.
  */
 
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
@@ -52,7 +52,7 @@ import {
   BAND_BOT,
   SERVICES,
 } from '../lib/constants.js';
-import { PROJECTS } from '../lib/projects.js';
+import { useProjects } from '../lib/projectsContext.jsx';
 
 /* Blur is the most expensive thing on this page: it repaints text. Quantizing
    to a coarse step means most frames write a value byte-identical to the last
@@ -77,13 +77,14 @@ function thumbGradient(str) {
 
 /* -------------------------------------------------------------------- card */
 
-function Card({ item, index, progress, metrics, version, reduced }) {
+function Card({ item, index, count, progress, metrics, version, reduced }) {
   const ref = useRef(null);
-  /* 2x2 grid: the left COLUMN flies left and the right column flies right, so
-     the split follows the seam the reader sees; the stagger index is the ROW,
-     so the top pair leaves ahead of the bottom pair. */
-  const dir = index % 2 === 0 ? -1 : 1;
-  const k = index < 2 ? 0 : 1;
+  /* Single row: the left half flies left and the right half right, so the
+     split follows the centre seam; the stagger index counts inward from the
+     edge, so the outer cards leave ahead of the inner ones. (≤3 per half —
+     the choreography ceiling; getFeaturedProjects caps the list at 6.) */
+  const dir = index < count / 2 ? -1 : 1;
+  const k = dir < 0 ? index : count - 1 - index;
 
   /* raw fly amount 0..1 — shared shape for x / opacity / blur */
   const fly = useTransform(progress, (p) => {
@@ -137,7 +138,7 @@ function Card({ item, index, progress, metrics, version, reduced }) {
             the eyebrow and title invert together (their opacity utilities
             still apply, which is what keeps the eyebrow secondary on white). */}
         <motion.div
-          className="glass relative overflow-hidden rounded-[10px] p-[0.33vw]"
+          className="glass relative overflow-hidden rounded-[10px] p-[0.45vw]"
           initial="rest"
           whileHover={hover}
           whileTap={reduced ? undefined : 'tap'}
@@ -160,12 +161,27 @@ function Card({ item, index, progress, metrics, version, reduced }) {
           <div className="relative aspect-video w-full overflow-hidden rounded-[7px]">
             <motion.div
               className="absolute inset-0"
-              style={{ background: thumbGradient(item.slug) }}
+              style={item.thumb?.url ? undefined : { background: thumbGradient(item.slug) }}
               variants={{ rest: { scale: 1 }, hover: { scale: 1.08 }, tap: { scale: 1.08 } }}
               transition={{ type: 'spring', stiffness: 220, damping: 30 }}
-            />
+            >
+              {item.thumb?.url &&
+                (item.thumb.kind === 'video' ? (
+                  <video
+                    className="h-full w-full object-cover"
+                    src={item.thumb.url}
+                    poster={item.thumb.poster || undefined}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                  />
+                ) : (
+                  <img className="h-full w-full object-cover" src={item.thumb.url} alt="" />
+                ))}
+            </motion.div>
           </div>
-          <div className="relative px-[0.21vw] pb-[0.15vw] pt-[0.39vw]">
+          <div className="relative px-[0.3vw] pb-[0.25vw] pt-[0.55vw]">
             <p className="m-0 text-[length:var(--fs-micro)] uppercase tracking-[0.1em] opacity-70 whitespace-nowrap overflow-hidden text-ellipsis">
               {item.category} · {item.year}
             </p>
@@ -173,7 +189,7 @@ function Card({ item, index, progress, metrics, version, reduced }) {
                 floor is only there so a one-line title doesn't sit tight
                 against the card edge — the grid equalises the row itself. */}
             <motion.p
-              className="m-0 mt-[0.15vw] flex min-h-[1.25em] items-start gap-[0.24vw] text-[length:var(--fs-ui)] font-semibold leading-[115%]"
+              className="m-0 mt-[0.25vw] flex min-h-[1.25em] items-start gap-[0.4vw] text-[length:var(--fs-ui)] font-semibold leading-[115%]"
               variants={{ rest: { x: 0 }, hover: { x: 4 }, tap: { x: 4 } }}
               transition={{ type: 'spring', stiffness: 320, damping: 26 }}
             >
@@ -191,6 +207,12 @@ function Card({ item, index, progress, metrics, version, reduced }) {
                 →
               </motion.span>
             </motion.p>
+            {/* one-line pitch under the title — same voice as the services
+                blurbs (micro size, 145% leading, secondary), clamped so a
+                long summary can't unbalance the row */}
+            <p className="m-0 mt-[0.45vw] line-clamp-2 text-[length:var(--fs-micro)] leading-[145%] opacity-70">
+              {item.summary}
+            </p>
           </div>
         </motion.div>
       </TransitionLink>
@@ -224,6 +246,7 @@ function KineticWord({ text, enter, index, accent, reduced }) {
 
 export default function Works() {
   const { progress, metrics, reduced } = usePlate();
+  const { featured } = useProjects();
 
   const rootRef = useRef(null);
   const titleRef = useRef(null);
@@ -307,8 +330,8 @@ export default function Works() {
       const bottom = top + b.height;
       /* The band was tuned for half-screen blocks: full opacity wants
          BAND_HL + BAND_TOP of headroom and BAND_BOT of footroom, so a block
-         taller than vh minus that sum could never light — and the featured
-         group IS taller than it now. When a block doesn't fit, each side's
+         taller than vh minus that sum could never light — which the featured
+         group was, back when it ran 2x2. When a block doesn't fit, each side's
          ramp is scaled to the slack that side actually gets (half of what's
          left over), which makes a centred tall block peak at exactly 1 rather
          than sitting permanently dimmed. A block that fits keeps the original
@@ -379,21 +402,16 @@ export default function Works() {
             band. The padding-top (not a `top`) is what holds the heading at its
             old 22.9252vw, which is where s2Start is anchored.
 
-            Width: the whole group runs at 60% of its original size on desktop
-            (it read too big), so the grid caps at 27.6vw and the local
-            font-var overrides below shrink only the vw term of each size —
-            the px floors stay, so small screens are untouched. Summing the
-            column at a grid width G gives a group height of 13.5vw + 0.5625G;
-            holding that to 88% of the viewport height solves to
-            G <= 1.564*vh - 23.9vw, which is the second term. It only binds on
-            very short viewports — at 16:9 and taller the 27.6vw cap wins. The
-            15.6vw floor is a backstop: on an extreme aspect the group
-            overflows rather than collapsing to nothing. */}
-        <div className="w-group mx-auto flex w-[min(27.6vw,max(15.6vw,calc(156.4vh_-_23.9vw)))] flex-col items-center pt-[22.9252vw] [--fs-work:max(24px,2.0408vw)] [--fs-ui:max(13px,1.2245vw)] [--fs-micro:max(11px,0.6122vw)]">
+            Width: 64.2857vw — the exact measure of the services block below,
+            so the two screens share left/right margins. The cards run as ONE
+            row of four inside it (each ~14.7vw), which keeps the group well
+            under a viewport tall — no vh clamp needed. Type rides the global
+            --fs-* scale untouched, same as every other screen. */}
+        <div className="w-group mx-auto flex w-[64.2857vw] flex-col items-center pt-[22.9252vw]">
           <motion.div
             ref={titleRef}
             data-block=""
-            className="w-title flex w-full flex-col items-center gap-[0.66vw] text-center"
+            className="w-title flex w-full flex-col items-center gap-[1.1vw] text-center"
             style={{ opacity: titleOpacity, filter: titleFilter }}
           >
             <p className="w-eyebrow text-[length:var(--fs-micro)] uppercase leading-[100%]">
@@ -412,14 +430,18 @@ export default function Works() {
           <motion.div
             ref={listRef}
             data-block=""
-            className="w-list mt-[1.2vw] grid w-full grid-cols-2 gap-[0.96vw]"
-            style={{ opacity: groupOpacity }}
+            className="w-list mt-[2vw] grid w-full gap-x-[1.8vw]"
+            style={{
+              opacity: groupOpacity,
+              gridTemplateColumns: `repeat(${featured.length}, minmax(0, 1fr))`,
+            }}
           >
-            {PROJECTS.map((item, i) => (
+            {featured.map((item, i) => (
               <Card
                 key={item.slug}
                 item={item}
                 index={i}
+                count={featured.length}
                 progress={progress}
                 metrics={metrics}
                 version={version}
@@ -433,7 +455,7 @@ export default function Works() {
           <motion.div
             ref={ctaRef}
             data-block=""
-            className="w-cta mt-[0.96vw] flex w-full justify-center"
+            className="w-cta mt-[1.6vw] flex w-full justify-center"
             style={{ opacity: groupOpacity }}
           >
             <TransitionLink
@@ -441,7 +463,7 @@ export default function Works() {
               className="pointer-events-auto rounded-full focus-visible:[outline:2px_solid_var(--red)] focus-visible:[outline-offset:4px]"
             >
               <motion.span
-                className="glass relative flex items-center gap-[0.3vw] overflow-hidden rounded-full px-[0.66vw] py-[0.36vw] text-[length:var(--fs-micro)] font-semibold uppercase tracking-[0.08em] leading-[100%]"
+                className="glass relative flex items-center gap-[0.5vw] overflow-hidden rounded-full px-[1.1vw] py-[0.6vw] text-[length:var(--fs-micro)] font-semibold uppercase tracking-[0.08em] leading-[100%]"
                 initial="rest"
                 animate="rest"
                 whileHover={reduced ? undefined : 'hover'}
