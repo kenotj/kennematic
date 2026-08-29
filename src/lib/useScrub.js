@@ -29,7 +29,13 @@ import { A, B, LERP_TAU, SNAP, WIPE_LEAD, VIDEO_SRC } from './constants.js';
 
 const SEEK_EPS = 0.01;
 const SEEK_WATCHDOG = 1000; /* ms — a seek that never fires `seeked` unblocks */
-const BANK_IDLE_DESTROY = 5000; /* ms — survive StrictMode remounts */
+/* ms the frame bank outlives its last layer. It must survive StrictMode
+ * remounts (tens of ms) — and a trip to a sub-page and back, which is the
+ * expensive case: rebuilding means refetching and re-decoding the whole plate,
+ * so the landing would crossfade in on a black canvas and pop to the film a
+ * second later. What it holds meanwhile is the WebP blob set plus a bounded
+ * 32-bitmap LRU, the same footprint it has while the landing is on screen. */
+const BANK_IDLE_DESTROY = 120000;
 const PAINT_FAILURE_LIMIT = 4;
 const PAINT_RETRY_BASE_MS = 80;
 const PAINT_RETRY_MAX_MS = 1000;
@@ -71,6 +77,7 @@ function createLayer(index, video, canvas) {
     ctx: canvas ? canvas.getContext('2d', { alpha: false }) : null,
     t: 0,
     target: 0,
+    primed: false,
     vel: 0,
     cur: -1,
     painted: false,
@@ -272,6 +279,19 @@ function frame(now) {
 
     const target = engine.reduced ? 0 : Math.min(dur, p * span + i * WIPE_LEAD);
     L.target = target;
+
+    /* A layer's very first frame lands on the target outright. Mounting at a
+       restored scroll position (sub-page close button) otherwise starts every
+       layer at t = 0 and eases up to the real time — the film visibly scrubs
+       from its first frame to where you left it. */
+    if (!L.primed) {
+      L.primed = true;
+      L.t = target;
+      L.vel = 0;
+      L.visible = visible[i];
+      if (L.visible) drawLayer(L, L.t);
+      continue;
+    }
 
     const prev = L.t;
     const gap = Math.abs(target - L.t);

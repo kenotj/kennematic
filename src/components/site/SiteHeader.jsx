@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
+import CloseButton from './CloseButton.jsx';
 import MenuOverlay from './MenuOverlay.jsx';
 
 const ITEM_CLASS = [
@@ -41,6 +42,9 @@ export default function SiteHeader() {
           Menu
         </button>
       </div>
+      {/* The exit, mirrored on the right. Hidden while the menu is open —
+          the overlay puts its own Close in exactly this slot. */}
+      {!menuOpen && <CloseButton />}
       <MenuOverlay open={menuOpen} onClose={() => setMenuOpen(false)} />
     </header>
   );

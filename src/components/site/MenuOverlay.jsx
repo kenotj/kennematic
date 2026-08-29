@@ -10,7 +10,7 @@
  * open (post-hydration), so framer `initial` props are SSR-safe here.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
@@ -21,11 +21,34 @@ import { LiquidFill, liquidInk, LIQUID_INK_TRANSITION } from './liquidHover.jsx'
 const LINK_CLASS = [
   'font-display font-extrabold uppercase leading-[110%]',
   'text-[length:var(--fs-work)]',
-  '[transition:opacity_200ms_linear]',
-  '[@media(hover:hover)_and_(pointer:fine)]:hover:opacity-[.65]',
   'focus-visible:[outline:2px_solid_var(--red)]',
   'focus-visible:[outline-offset:4px]',
 ].join(' ');
+
+/* Links rest at 85% scale; hovering (or keyboard-focusing) one grows it to
+ * full size while its siblings stay small and fade slightly. `initial={false}`
+ * mounts labels already at the resting scale so the menu opens small instead
+ * of shrinking on entry. Scale lives on an inner span so it never fights the
+ * entry variants on the wrapping motion.div. */
+const NAV_DIM_TRANSITION = { duration: 0.45, ease: [0.16, 1, 0.3, 1] };
+
+function NavLabel({ id, hovered, restOpacity = 1, children }) {
+  const active = hovered === id;
+  const dimmed = hovered !== null && !active;
+  return (
+    <motion.span
+      className="inline-block origin-left"
+      initial={false}
+      animate={{
+        scale: active ? 1 : 0.85,
+        opacity: active ? 1 : dimmed ? restOpacity * 0.65 : restOpacity,
+      }}
+      transition={NAV_DIM_TRANSITION}
+    >
+      {children}
+    </motion.span>
+  );
+}
 
 const sheet = {
   hidden: { opacity: 0 },
@@ -46,6 +69,16 @@ const item = {
 };
 
 export default function MenuOverlay({ open, onClose }) {
+  const [hovered, setHovered] = useState(null);
+
+  /* Only set the active id per-link; clearing happens on the nav itself, so
+   * crossing the dead space between links doesn't pass through a "nothing
+   * hovered" state and make every sibling pulse back to full size. */
+  const navHoverProps = (id) => ({
+    onMouseEnter: () => setHovered(id),
+    onFocus: () => setHovered(id),
+  });
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => {
@@ -94,41 +127,58 @@ export default function MenuOverlay({ open, onClose }) {
         style={{ padding: 'calc(var(--pad-header) * 2) var(--pad-header)' }}
         variants={list}
         onClick={onClose}
+        onMouseLeave={() => setHovered(null)}
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget)) setHovered(null);
+        }}
       >
         <motion.div variants={item}>
-          <Link href="/" className={LINK_CLASS}>
-            Home
+          <Link href="/" className={LINK_CLASS} {...navHoverProps('home')}>
+            <NavLabel id="home" hovered={hovered}>
+              Home
+            </NavLabel>
           </Link>
         </motion.div>
         <motion.div variants={item} className="flex flex-col gap-[0.8vw]">
-          <Link href="/projects" className={LINK_CLASS}>
-            Projects
+          <Link href="/projects" className={LINK_CLASS} {...navHoverProps('projects')}>
+            <NavLabel id="projects" hovered={hovered}>
+              Projects
+            </NavLabel>
           </Link>
           <div className="flex flex-col gap-[0.4vw] pl-[2vw]">
             {PROJECTS.map((p) => (
               <Link
                 key={p.slug}
                 href={`/projects/${p.slug}`}
-                className="font-body text-[length:var(--fs-ui)] opacity-70 [transition:opacity_200ms_linear] hover:opacity-100 focus-visible:[outline:2px_solid_var(--red)] focus-visible:[outline-offset:4px]"
+                className="font-body text-[length:var(--fs-ui)] focus-visible:[outline:2px_solid_var(--red)] focus-visible:[outline-offset:4px]"
+                {...navHoverProps(`project:${p.slug}`)}
               >
-                {p.client} — {p.title}
+                <NavLabel id={`project:${p.slug}`} hovered={hovered} restOpacity={0.7}>
+                  {p.client} — {p.title}
+                </NavLabel>
               </Link>
             ))}
           </div>
         </motion.div>
         <motion.div variants={item}>
-          <Link href="/about" className={LINK_CLASS}>
-            About
+          <Link href="/about" className={LINK_CLASS} {...navHoverProps('about')}>
+            <NavLabel id="about" hovered={hovered}>
+              About
+            </NavLabel>
           </Link>
         </motion.div>
         <motion.div variants={item}>
-          <Link href="/playground" className={LINK_CLASS}>
-            Playground
+          <Link href="/playground" className={LINK_CLASS} {...navHoverProps('playground')}>
+            <NavLabel id="playground" hovered={hovered}>
+              Playground
+            </NavLabel>
           </Link>
         </motion.div>
         <motion.div variants={item}>
-          <a href={`mailto:${CONTACT_EMAIL}`} className={LINK_CLASS}>
-            Contact
+          <a href={`mailto:${CONTACT_EMAIL}`} className={LINK_CLASS} {...navHoverProps('contact')}>
+            <NavLabel id="contact" hovered={hovered}>
+              Contact
+            </NavLabel>
           </a>
         </motion.div>
       </motion.nav>

@@ -2,6 +2,7 @@ import { Montserrat } from 'next/font/google';
 
 import './globals.css';
 import { LiquidDefs } from '../components/site/liquidHover.jsx';
+import RouteWatcher from '../components/site/RouteWatcher.jsx';
 
 /* Variable font: omitting `weight` loads the full 100–900 axis in both styles.
  * The family name next/font generates is hashed — components must reach it
@@ -46,6 +47,8 @@ export default function RootLayout({ children }) {
         {/* The goo filters every LiquidFill references. Defined once at the
             root so the ids resolve on every route. */}
         <LiquidDefs />
+        {/* Renders nothing; closes the view transition each route commit. */}
+        <RouteWatcher />
         {children}
       </body>
     </html>

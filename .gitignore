@@ -9,7 +9,7 @@ dist
 # Env files & secrets — never commit API keys
 .env
 .env.*
-!.env.example
+.env.example
 *.pem
 *.key
 *.p12

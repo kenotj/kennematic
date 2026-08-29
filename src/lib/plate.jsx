@@ -16,6 +16,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -23,6 +24,7 @@ import {
 import { useScroll, useMotionValue } from 'framer-motion';
 
 import { clamp01 } from './easing.js';
+import { saveHomeScroll, takeHomeScrollRestore } from './homeScroll.js';
 import {
   WIPE_VH,
   PIN_FRAC,
@@ -33,6 +35,10 @@ import {
   titleOut,
   titleIn,
 } from './constants.js';
+
+/* useLayoutEffect warns when React renders this provider on the server; the
+ * restore below has to land before first paint, so pick per environment. */
+const useIsoLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
 /* ---------------------------------------------------------------- entrance */
 
@@ -223,10 +229,41 @@ export function PlateProvider({ children }) {
         return;
       }
       progress.set(clamp01(y / metrics.runwayPx));
+      saveHomeScroll(y);
     };
     write(scrollY.get());
     return scrollY.on('change', write);
   }, [scrollY, progress, metrics]);
+
+  /* --------------------------------------------- resume the runway */
+  /* Coming back from a sub-page via its close button, the landing must open
+   * on the frame it was left on — no visit to the top on the way.
+   *
+   * A layout effect, so the scroll lands before the browser paints this
+   * commit, and the close button navigates with `scroll={false}` so the
+   * router never resets it afterwards.
+   *
+   * measure() has to run here too, not just in the (later, passive) lifecycle
+   * effect below: until it does, `runwayPx` is still its placeholder 1, and
+   * the scroll subscriber would compute progress = 1 and flash the last frame
+   * of the film before the real geometry arrived. */
+  useIsoLayoutEffect(() => {
+    const y = takeHomeScrollRestore();
+    if (y === null) return;
+
+    window.scrollTo(0, y);
+    measureRef.current();
+
+    /* Belt and braces: if anything else still lands us at the top, take it
+       back on the next frame. */
+    const raf = requestAnimationFrame(() => {
+      if (window.scrollY === 0 && y > 0) {
+        window.scrollTo(0, y);
+        measureRef.current();
+      }
+    });
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   /* ----------------------------------------------- measure lifecycle */
   useEffect(() => {

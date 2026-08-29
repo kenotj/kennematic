@@ -12,11 +12,19 @@
  * prefers-reduced-motion falls through to plain <Link> behaviour, and so does
  * any modified click (new tab, download, middle button) — those must never be
  * intercepted.
+ *
+ * `scroll={false}` is for the sub-page close button: the landing restores its
+ * own scroll position in a layout effect, and the router's default hop to the
+ * top would land after that and undo it. It is forwarded to both navigation
+ * paths — <Link>'s own and the router.push() inside the transition — because
+ * either can be the one that runs.
  */
 
 import { forwardRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+
+import { beginRouteTransition } from '../../lib/routeTransition.js';
 
 /* A click the browser has its own meaning for — leave it alone. */
 function isModified(e) {
@@ -31,7 +39,7 @@ function isModified(e) {
 }
 
 const TransitionLink = forwardRef(function TransitionLink(
-  { href, onClick, children, ...rest },
+  { href, onClick, scroll, children, ...rest },
   ref
 ) {
   const router = useRouter();
@@ -50,13 +58,19 @@ const TransitionLink = forwardRef(function TransitionLink(
       }
 
       e.preventDefault();
-      document.startViewTransition(() => router.push(href));
+      document.startViewTransition(() => {
+        /* The promise, not the push, is what tells the browser when to
+           snapshot the destination — see lib/routeTransition.js. */
+        const committed = beginRouteTransition();
+        router.push(href, { scroll: scroll !== false });
+        return committed;
+      });
     },
-    [href, onClick, router]
+    [href, onClick, router, scroll]
   );
 
   return (
-    <Link ref={ref} href={href} onClick={handleClick} {...rest}>
+    <Link ref={ref} href={href} scroll={scroll} onClick={handleClick} {...rest}>
       {children}
     </Link>
   );
