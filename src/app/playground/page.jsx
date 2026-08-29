@@ -23,7 +23,7 @@ const EXPERIMENTS = [
 export default function PlaygroundPage() {
   return (
     <>
-      <SiteHeader />
+      <SiteHeader trail={[{ label: 'Playground' }]} />
       <main
         className="mx-auto w-full max-w-[min(92vw,1200px)]"
         style={{ padding: 'calc(var(--pad-header) * 2 + 56px) 0 calc(var(--pad-header) * 4)' }}

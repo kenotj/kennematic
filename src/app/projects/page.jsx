@@ -14,7 +14,7 @@ export default async function ProjectsPage() {
   const projects = await getAllProjects();
   return (
     <>
-      <SiteHeader />
+      <SiteHeader trail={[{ label: 'Projects' }]} />
       <main
         className="mx-auto w-full max-w-[min(92vw,1200px)]"
         style={{ padding: 'calc(var(--pad-header) * 2 + 56px) 0 calc(var(--pad-header) * 4)' }}
