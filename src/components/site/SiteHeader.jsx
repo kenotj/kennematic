@@ -11,41 +11,74 @@
 
 import { Fragment, useState } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 
 import CloseButton from './CloseButton.jsx';
 import MenuOverlay from './MenuOverlay.jsx';
+import { LiquidFill, liquidInk, LIQUID_INK_TRANSITION } from './liquidHover.jsx';
 
+/* Geometry and hover mirror the landing Header pill exactly (see Header.jsx):
+   the pill itself is unpadded, each half carries px-16/py-10 and is its own
+   liquid-hover host, so the two pills render the same length and behave the
+   same across routes. */
 const ITEM_CLASS = [
+  'relative flex items-center px-[16px] py-[10px]',
   'font-display font-bold uppercase text-[length:var(--fs-micro)] tracking-[0.08em] whitespace-nowrap',
-  '[transition:opacity_200ms_linear]',
-  '[@media(hover:hover)_and_(pointer:fine)]:hover:opacity-[.65]',
   'focus-visible:[outline:2px_solid_var(--red)]',
-  'focus-visible:[outline-offset:2px]',
+  'focus-visible:[outline-offset:-2px]',
 ].join(' ');
+
+const ITEM_MOTION = {
+  initial: 'rest',
+  animate: 'rest',
+  whileHover: 'hover',
+  whileTap: 'tap',
+};
 
 export default function SiteHeader({ trail }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
+    /* `absolute`, not fixed: the pill and trail belong to the page and scroll
+       away with it. Only the CloseButton (fixed, right edge) tracks the
+       viewport. `w-fit` keeps the pill shrink-wrapped — without it the wide
+       nowrap breadcrumb below stretches the header box and the pill with it. */
     <header
-      className="site-header fixed z-50"
+      className="site-header absolute z-50"
       style={{
         top: 'calc(var(--top-header) + env(safe-area-inset-top))',
         left: 'var(--pad-header)',
       }}
     >
-      <div className="glass flex items-center gap-[14px] rounded-full px-[18px] py-[10px]">
-        <Link href="/" className={ITEM_CLASS}>
-          KENNEMATIC
-        </Link>
-        <span aria-hidden="true" className="h-[12px] w-px bg-white/25" />
-        <button
+      <div className="glass flex w-fit items-center overflow-hidden rounded-full">
+        <motion.div {...ITEM_MOTION}>
+          <Link href="/" className={ITEM_CLASS}>
+            <LiquidFill from="left" scale="sm" />
+            <motion.span
+              className="relative"
+              variants={liquidInk}
+              transition={LIQUID_INK_TRANSITION}
+            >
+              KENNEMATIC
+            </motion.span>
+          </Link>
+        </motion.div>
+        <span aria-hidden="true" className="relative h-[12px] w-px shrink-0 bg-white/25" />
+        <motion.button
+          {...ITEM_MOTION}
           type="button"
           onClick={() => setMenuOpen(true)}
-          className={`${ITEM_CLASS} cursor-pointer border-0 bg-transparent p-0 text-white`}
+          className={`${ITEM_CLASS} cursor-pointer border-0 bg-transparent text-white`}
         >
-          Menu
-        </button>
+          <LiquidFill from="right" scale="sm" />
+          <motion.span
+            className="relative"
+            variants={liquidInk}
+            transition={LIQUID_INK_TRANSITION}
+          >
+            Menu
+          </motion.span>
+        </motion.button>
       </div>
       {/* Breadcrumb trail, tucked under the pill and aligned to its inner
           padding. Ancestors link back up the tree; the current page is plain
@@ -53,7 +86,7 @@ export default function SiteHeader({ trail }) {
       {trail?.length > 0 && (
         <nav
           aria-label="Breadcrumb"
-          className="mt-[10px] flex flex-wrap items-center gap-[8px] px-[18px] font-display text-[length:var(--fs-micro)] font-medium uppercase tracking-[0.08em] whitespace-nowrap"
+          className="mt-[10px] flex flex-wrap items-center gap-[8px] px-[16px] font-display text-[length:var(--fs-micro)] font-medium uppercase tracking-[0.08em] whitespace-nowrap"
         >
           {trail.map((item, i) => (
             <Fragment key={`${item.label}-${i}`}>

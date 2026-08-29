@@ -90,6 +90,25 @@
   font-weight: 300;
 }
 
+/* ---------- sub-page type ---------- */
+/* Project sub-pages run the type scale at 80% of the global tokens (which
+   are themselves 80% of legacy) — plain document pages read better a step
+   quieter than the landing's choreography. Put this on the page's <main>;
+   the fixed header/breadcrumb sits outside it and keeps the global size.
+   Both the raw --fs-* names and the --text-* utility vars are overridden so
+   `text-stat` and `text-[length:var(--fs-ui)]` shrink alike. The px floors
+   stay, so small screens are untouched. */
+.type-sub {
+  --fs-stat: 4.3537vw;
+  --fs-work: max(24px, 2.1769vw);
+  --fs-ui: max(13px, 1.3061vw);
+  --fs-micro: max(11px, 0.6531vw);
+  --text-stat: 4.3537vw;
+  --text-work: max(24px, 2.1769vw);
+  --text-ui: max(13px, 1.3061vw);
+  --text-micro: max(11px, 0.6531vw);
+}
+
 /* ---------- liquid glass ---------- */
 /* The one glass recipe for the whole site (nav pill, menu sheet, project
    cards). backdrop-filter over the video layers is what sells it; the inset

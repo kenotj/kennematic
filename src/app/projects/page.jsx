@@ -16,7 +16,7 @@ export default async function ProjectsPage() {
     <>
       <SiteHeader trail={[{ label: 'Projects' }]} />
       <main
-        className="mx-auto w-full max-w-[min(92vw,1200px)]"
+        className="type-sub mx-auto w-full max-w-[min(92vw,1200px)]"
         style={{ padding: 'calc(var(--pad-header) * 2 + 56px) 0 calc(var(--pad-header) * 4)' }}
       >
         <h1 className="font-display font-extrabold uppercase text-stat leading-[100%]">
