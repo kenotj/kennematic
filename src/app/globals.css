@@ -109,6 +109,18 @@
   --text-micro: max(11px, 0.6531vw);
 }
 
+/* ---------- case study ---------- */
+/* The section label hangs in the left margin beside the copy. Nudge it down so
+   its first line sits on the body's first baseline instead of on the box top —
+   half the difference between the two line boxes gets close enough for type
+   this small. Below md the grid collapses and the label stacks above the copy,
+   where the nudge would read as a stray gap, so it only applies from md up. */
+@media (min-width: 768px) {
+  .case-label {
+    padding-top: calc((var(--fs-ui) * 1.5 - var(--fs-micro) * 1.2) / 2);
+  }
+}
+
 /* ---------- liquid glass ---------- */
 /* The one glass recipe for the whole site (nav pill, menu sheet, project
    cards). backdrop-filter over the video layers is what sells it; the inset

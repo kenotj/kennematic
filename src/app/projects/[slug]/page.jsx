@@ -1,5 +1,21 @@
 /* KENNEMATIC — project case study. Plain server-rendered page: no
- * PlateProvider, no frame bank, ordinary scrolling. */
+ * PlateProvider, no frame bank, ordinary scrolling.
+ *
+ * Layout rules, in one place because every ugly version of this page broke one
+ * of them:
+ *
+ *   1. ONE SPINE. The section label hangs in the left margin; the copy AND its
+ *      media both start at the content column's left edge. Media used to be a
+ *      sibling of the section and spanned the whole container, so text and
+ *      images never shared an edge. The hero is the single deliberate
+ *      exception — it spans the container, which is what makes it read as the
+ *      hero.
+ *   2. GAPS ENCODE GROUPING. Three steps only: media within a row < copy to its
+ *      media < section to section. A flat gap everywhere is what made the
+ *      images look unattached to the text they belong to.
+ *   3. ROWS ARE RATIO-PURE. See mediaRows() — mixed aspect ratios never share a
+ *      row, and no row is left half-empty.
+ */
 
 import { Fragment } from 'react';
 import Link from 'next/link';
@@ -7,7 +23,14 @@ import { notFound } from 'next/navigation';
 
 import SiteHeader from '../../../components/site/SiteHeader.jsx';
 import MediaPlaceholder from '../../../components/site/MediaPlaceholder.jsx';
+import { LightboxProvider, LightboxTrigger } from '../../../components/site/Lightbox.jsx';
 import { getAllProjects, getProject } from '../../../lib/db.js';
+
+/* The three-step spacing scale. Named so the relationship between them stays
+   visible at the call sites — the whole point is that they are not equal. */
+const GAP_ROW = 'max(12px,1.2vw)'; /* between media sharing a row */
+const GAP_BAND = 'max(20px,2.2vw)'; /* between copy and its media */
+const GAP_SECTION = 'max(56px,6.5vw)'; /* between sections */
 
 export async function generateStaticParams() {
   return (await getAllProjects()).map((p) => ({ slug: p.slug }));
@@ -23,29 +46,126 @@ export async function generateMetadata({ params }) {
   };
 }
 
+/* Split a section's media into rows.
+ *
+ * Consecutive items sharing an aspect ratio form a run, and only a run pairs up
+ * two-across — so a 16/9 still never sits beside a 4:3 screenshot with the row
+ * height split between them. A run of odd length leads with one full-width item
+ * and pairs the rest, which is why nothing ends on a half-width item with a
+ * hole beside it. A run of one is simply full width.
+ *
+ * Born from Nature's "Approach" run is [16/9, 16/9, 4:3, 4:3, 4:3]: one pair of
+ * stills, then the node-graph screenshot full width (where it is actually
+ * legible) and the remaining two paired. */
+function mediaRows(items) {
+  const rows = [];
+  let i = 0;
+  while (i < items.length) {
+    let j = i;
+    while (j < items.length && items[j].ratio === items[i].ratio) j += 1;
+    const run = items.slice(i, j);
+    if (run.length % 2 === 1) rows.push([run.shift()]);
+    for (let k = 0; k < run.length; k += 2) rows.push(run.slice(k, k + 2));
+    i = j;
+  }
+  return rows;
+}
+
+/* A body like "Format: 30s spec advert · Budget: ~$100 · Sound: Artlist SFX" is
+   a spec sheet wearing a paragraph's clothes, and it reads as a wall. When a
+   body is three or more `Key: value` pairs separated by " · " it renders as a
+   definition list; anything else returns null and falls through to prose, so
+   ordinary copy containing a colon is untouched. */
+function specPairs(body) {
+  const parts = body.split(' · ');
+  if (parts.length < 3) return null;
+  const pairs = parts.map((part) => {
+    const at = part.indexOf(': ');
+    return at > 0 && at <= 24 ? [part.slice(0, at), part.slice(at + 2)] : null;
+  });
+  return pairs.every(Boolean) ? pairs : null;
+}
+
 /* One media slot — image, video, or placeholder while a file is pending.
    `autoplay` is for the hero: silent looping playback with controls still
-   available; everything else waits to be played. */
-function CaseMedia({ m, autoplay = false, className = '' }) {
+   available; everything else waits to be played.
+
+   The media carries no visible caption — the images are meant to read as the
+   work itself, not as plates in a report. `label` still does real work: it is
+   the alt text, the lightbox's accessible name, and what MediaPlaceholder shows
+   while a file is pending.
+
+   Images open in the lightbox, because object-cover means the page only ever
+   shows a crop of them. Videos do not: they have their own controls, and a
+   click on one means play. */
+function CaseMedia({ m, autoplay = false, poster }) {
   if (!m.url) return <MediaPlaceholder label={m.label} ratio={m.ratio} />;
   return (
     <figure
-      className={`m-0 overflow-hidden rounded-[2px] ${className}`}
+      className="m-0 overflow-hidden rounded-[2px] bg-white/[0.04]"
       style={{ aspectRatio: m.ratio }}
     >
       {m.kind === 'video' ? (
         <video
           className="h-full w-full object-cover"
           src={m.url}
-          poster={m.poster || undefined}
+          poster={poster || m.poster || undefined}
           controls
           playsInline
           {...(autoplay ? { autoPlay: true, muted: true, loop: true } : { preload: 'metadata' })}
         />
       ) : (
-        <img className="h-full w-full object-cover" src={m.url} alt={m.label} />
+        <LightboxTrigger url={m.url} label={m.label}>
+          <img className="h-full w-full object-cover" src={m.url} alt={m.label} />
+        </LightboxTrigger>
       )}
     </figure>
+  );
+}
+
+/* The media belonging to one band of copy, already grouped into rows. */
+function MediaRows({ items }) {
+  return mediaRows(items).map((row) => (
+    <div
+      key={row[0].url || row[0].label}
+      className={row.length > 1 ? 'grid sm:grid-cols-2' : ''}
+      style={row.length > 1 ? { gap: GAP_ROW } : undefined}
+    >
+      {row.map((m) => (
+        <CaseMedia key={m.url || m.label} m={m} />
+      ))}
+    </div>
+  ));
+}
+
+/* label in the margin | content column. Every band on the page uses this, which
+   is what keeps the left edge of the copy and the left edge of every image the
+   same line all the way down.
+
+   The column is capped at the reading measure rather than filling the grid
+   track, so the copy and the media share a RIGHT edge too, not just a left one.
+   Justified copy makes that edge exact. The cap has to live here rather than on
+   the <p> for the media to inherit it, and the column carries --fs-ui so `ch`
+   resolves against the type actually set in it. */
+function Band({ label, children }) {
+  return (
+    <section className="grid gap-x-[max(16px,2vw)] gap-y-[10px] md:grid-cols-[152px_1fr]">
+      {label ? (
+        <h2 className="case-label m-0 text-[length:var(--fs-micro)] uppercase tracking-[0.12em] opacity-70">
+          {label}
+        </h2>
+      ) : (
+        /* Holds the margin column open so an unlabelled band (the hero) still
+           lands on the spine instead of sliding into the label's track. */
+        <div aria-hidden="true" className="hidden md:block" />
+      )}
+      <div
+        className="flex max-w-[65ch] flex-col text-[length:var(--fs-ui)]"
+        style={{ gap: GAP_BAND }}
+      >
+        {children}
+      </div>
+    </section>
   );
 }
 
@@ -60,7 +180,7 @@ export default async function ProjectPage({ params }) {
 
   /* Media placement: an item flagged `hero` leads the page directly under the
      header; an item with a `section` name renders inline right after that
-     section's text; everything else lands in the gallery grid at the bottom
+     section's text; everything else lands in the gallery band at the bottom
      (hidden when empty). In Notion this maps to where the file sits — under a
      copy heading = inline, under "Media" = bottom gallery. */
   const hero = project.media.find((m) => m.hero && m.url);
@@ -74,16 +194,33 @@ export default async function ProjectPage({ params }) {
   }
   const gallery = placed.filter((m) => !sectionNames.has(m.section));
 
+  /* The lightbox's running order. Built by walking the page the way it renders
+     — hero, then each section's inline media in section order, then the gallery
+     — so stepping through with the arrows follows what the viewer just scrolled
+     past. Videos are excluded; only images open. */
+  const zoomable = [
+    hero,
+    ...project.sections.flatMap((s) => inline.get(s.heading) ?? []),
+    ...gallery,
+  ].filter((m) => m?.url && m.kind !== 'video');
+
   return (
-    <>
+    <LightboxProvider items={zoomable}>
       <SiteHeader
         trail={[{ label: 'Projects', href: '/projects' }, { label: project.title }]}
       />
       <main
         className="type-sub mx-auto w-full max-w-[min(92vw,1200px)]"
-        style={{ padding: 'calc(var(--pad-header) * 2 + 56px) 0 calc(var(--pad-header) * 4)' }}
+        /* Top padding clears the absolute header (pill + breadcrumb) and then
+           opens the gap down to the eyebrow. That gap runs 2.5x its old size
+           from tablet up; the 56px floor holds on small screens, where the
+           header stack already sits close to the copy. */
+        style={{
+          padding: 'calc(var(--pad-header) * 2 + max(56px, 8.1vw)) 0 calc(var(--pad-header) * 4)',
+        }}
       >
-        {/* hero */}
+        {/* hero copy — the one block that sits at the container edge with the
+            hero media, so the title and the film read as a single opening */}
         <header className="flex flex-col gap-[max(12px,1.6327vw)]">
           <p className="text-[length:var(--fs-micro)] uppercase tracking-[0.12em] opacity-70">
             {project.category} · {project.client} · {project.year} · {project.role}
@@ -91,56 +228,67 @@ export default async function ProjectPage({ params }) {
           <h1 className="font-display font-extrabold uppercase text-stat leading-[100%]">
             {project.title}
           </h1>
-          <p className="max-w-[60ch] text-[length:var(--fs-ui)] leading-[140%]">
+          <p className="max-w-[60ch] hyphens-auto text-justify text-[length:var(--fs-ui)] leading-[140%]">
             {project.summary}
           </p>
         </header>
 
-        {/* hero media */}
-        {hero && <CaseMedia m={hero} autoplay className="mt-[max(32px,4vw)]" />}
-
-        {/* process sections, with their media littered inline where assigned */}
-        <div className="mt-[max(48px,6vw)] flex flex-col gap-[max(32px,4vw)]">
-          {project.sections.map((section) => (
-            <Fragment key={section.heading}>
-              <section className="grid gap-[12px] md:grid-cols-[200px_1fr]">
-                <h2 className="m-0 text-[length:var(--fs-micro)] uppercase tracking-[0.12em] opacity-70">
-                  {section.heading}
-                </h2>
-                <p className="m-0 max-w-[65ch] text-[length:var(--fs-ui)] leading-[150%]">
-                  {section.body}
-                </p>
-              </section>
-              {inline.has(section.heading) && (
-                <div
-                  className={`grid gap-[max(16px,1.6327vw)] ${
-                    inline.get(section.heading).length > 1 ? 'md:grid-cols-2' : ''
-                  }`}
-                >
-                  {inline.get(section.heading).map((m) => (
-                    <CaseMedia key={m.label} m={m} />
-                  ))}
-                </div>
-              )}
-            </Fragment>
-          ))}
-        </div>
-
-        {/* remaining media — only what wasn't placed inline */}
-        {gallery.length > 0 && (
-          <div className="mt-[max(48px,6vw)] grid gap-[max(16px,1.6327vw)] md:grid-cols-2">
-            {gallery.map((m) => (
-              <CaseMedia key={m.label} m={m} />
-            ))}
+        {/* hero media — on the same spine and the same measure as every other
+            image on the page, so nothing outruns the copy. Falls back to the
+            card poster so the slot is never a black rectangle before the video
+            paints its first frame. */}
+        {hero && (
+          <div className="mt-[max(28px,3.4vw)]">
+            <Band>
+              <CaseMedia m={hero} autoplay poster={project.thumb?.poster} />
+            </Band>
           </div>
         )}
 
+        {/* process sections, each with its media inside the content column */}
+        <div className="flex flex-col" style={{ marginTop: GAP_SECTION, gap: GAP_SECTION }}>
+          {project.sections.map((section) => {
+            const specs = specPairs(section.body);
+            return (
+              <Band key={section.heading} label={section.heading}>
+                {specs ? (
+                  <dl className="m-0 grid grid-cols-[minmax(0,max-content)_1fr] gap-x-[max(16px,1.6vw)] gap-y-[8px] leading-[150%]">
+                    {specs.map(([term, value]) => (
+                      <Fragment key={term}>
+                        <dt className="m-0 whitespace-nowrap opacity-55">{term}</dt>
+                        <dd className="m-0">{value}</dd>
+                      </Fragment>
+                    ))}
+                  </dl>
+                ) : (
+                  /* Justified, so the copy squares off against the media below
+                     it. Hyphenation is what keeps that from opening rivers. */
+                  <p className="m-0 hyphens-auto text-justify leading-[150%]">{section.body}</p>
+                )}
+                {inline.has(section.heading) && <MediaRows items={inline.get(section.heading)} />}
+              </Band>
+            );
+          })}
+
+          {/* remaining media — only what wasn't placed inline. Labelled and on
+              the same spine, so it reads as another band rather than a slab of
+              images that lost its heading. */}
+          {gallery.length > 0 && (
+            <Band label="Gallery">
+              <MediaRows items={gallery} />
+            </Band>
+          )}
+        </div>
+
         {/* footer nav */}
-        <nav className="mt-[max(56px,7vw)] flex flex-wrap items-baseline justify-between gap-[16px] text-[length:var(--fs-ui)]">
+        <nav
+          className="flex flex-wrap items-baseline justify-between gap-[16px] border-t border-white/[0.12] text-[length:var(--fs-ui)]"
+          style={{ marginTop: GAP_SECTION, paddingTop: GAP_BAND }}
+        >
           <Link href={`/projects/${prev.slug}`} className="underline hover:opacity-[.65]">
             ← {prev.title}
           </Link>
-          <Link href="/projects" className="uppercase text-[length:var(--fs-micro)] opacity-70 hover:opacity-100">
+          <Link href="/projects" className="uppercase text-[length:var(--fs-micro)] tracking-[0.12em] opacity-70 hover:opacity-100">
             All projects
           </Link>
           <Link href={`/projects/${next.slug}`} className="underline hover:opacity-[.65]">
@@ -148,6 +296,6 @@ export default async function ProjectPage({ params }) {
           </Link>
         </nav>
       </main>
-    </>
+    </LightboxProvider>
   );
 }

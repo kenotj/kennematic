@@ -82,11 +82,18 @@ export default function SiteHeader({ trail }) {
       </div>
       {/* Breadcrumb trail, tucked under the pill and aligned to its inner
           padding. Ancestors link back up the tree; the current page is plain
-          text so the trail reads as a location, not another nav row. */}
+          text so the trail reads as a location, not another nav row.
+
+          The header is absolutely positioned, so it is sized shrink-to-fit by
+          its widest child. A long project title must therefore be allowed to
+          wrap AND be capped at the viewport, or the trail widens the header
+          past the right edge and takes the whole document's scroll width with
+          it — every page below then renders shifted and clipped on narrow
+          screens. Only the separators stay unbreakable. */}
       {trail?.length > 0 && (
         <nav
           aria-label="Breadcrumb"
-          className="mt-[10px] flex flex-wrap items-center gap-[8px] px-[16px] font-display text-[length:var(--fs-micro)] font-medium uppercase tracking-[0.08em] whitespace-nowrap"
+          className="mt-[10px] flex max-w-[calc(100vw-var(--pad-header)*2)] flex-wrap items-center gap-[8px] px-[16px] font-display text-[length:var(--fs-micro)] font-medium uppercase tracking-[0.08em]"
         >
           {trail.map((item, i) => (
             <Fragment key={`${item.label}-${i}`}>
