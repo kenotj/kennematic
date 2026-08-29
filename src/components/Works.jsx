@@ -121,7 +121,7 @@ function Card({ item, index, progress, metrics, version, reduced }) {
       <TransitionLink
         href={`/projects/${item.slug}`}
         className={[
-          'block rounded-[14px]',
+          'block rounded-[10px]',
           'pointer-events-auto',
           'focus-visible:[outline:2px_solid_var(--red)]',
           'focus-visible:[outline-offset:4px]',
@@ -137,7 +137,7 @@ function Card({ item, index, progress, metrics, version, reduced }) {
             the eyebrow and title invert together (their opacity utilities
             still apply, which is what keeps the eyebrow secondary on white). */}
         <motion.div
-          className="glass relative overflow-hidden rounded-[14px] p-[0.55vw]"
+          className="glass relative overflow-hidden rounded-[10px] p-[0.33vw]"
           initial="rest"
           whileHover={hover}
           whileTap={reduced ? undefined : 'tap'}
@@ -157,7 +157,7 @@ function Card({ item, index, progress, metrics, version, reduced }) {
           }}
         >
           <LiquidFill />
-          <div className="relative aspect-video w-full overflow-hidden rounded-[9px]">
+          <div className="relative aspect-video w-full overflow-hidden rounded-[7px]">
             <motion.div
               className="absolute inset-0"
               style={{ background: thumbGradient(item.slug) }}
@@ -165,7 +165,7 @@ function Card({ item, index, progress, metrics, version, reduced }) {
               transition={{ type: 'spring', stiffness: 220, damping: 30 }}
             />
           </div>
-          <div className="relative px-[0.35vw] pb-[0.25vw] pt-[0.65vw]">
+          <div className="relative px-[0.21vw] pb-[0.15vw] pt-[0.39vw]">
             <p className="m-0 text-[length:var(--fs-micro)] uppercase tracking-[0.1em] opacity-70 whitespace-nowrap overflow-hidden text-ellipsis">
               {item.category} · {item.year}
             </p>
@@ -173,7 +173,7 @@ function Card({ item, index, progress, metrics, version, reduced }) {
                 floor is only there so a one-line title doesn't sit tight
                 against the card edge — the grid equalises the row itself. */}
             <motion.p
-              className="m-0 mt-[0.25vw] flex min-h-[1.25em] items-start gap-[0.4vw] text-[length:var(--fs-ui)] font-semibold leading-[115%]"
+              className="m-0 mt-[0.15vw] flex min-h-[1.25em] items-start gap-[0.24vw] text-[length:var(--fs-ui)] font-semibold leading-[115%]"
               variants={{ rest: { x: 0 }, hover: { x: 4 }, tap: { x: 4 } }}
               transition={{ type: 'spring', stiffness: 320, damping: 26 }}
             >
@@ -379,20 +379,21 @@ export default function Works() {
             band. The padding-top (not a `top`) is what holds the heading at its
             old 22.9252vw, which is where s2Start is anchored.
 
-            Width: two rows of 16:9 thumbs make the group about a screen tall,
-            and every part of it is sized in vw — so on a short or ultrawide
-            viewport a flat 46vw grid would run off the bottom. Summing the
-            column at a grid width G gives a group height of 22.44vw + 0.5625G;
+            Width: the whole group runs at 60% of its original size on desktop
+            (it read too big), so the grid caps at 27.6vw and the local
+            font-var overrides below shrink only the vw term of each size —
+            the px floors stay, so small screens are untouched. Summing the
+            column at a grid width G gives a group height of 13.5vw + 0.5625G;
             holding that to 88% of the viewport height solves to
-            G <= 1.564*vh - 39.9vw, which is the second term. It only binds
-            below roughly 16:9 — at 16:9 and taller the 46vw cap wins. The 26vw
-            floor is a backstop: on an extreme aspect the group overflows rather
-            than collapsing to nothing. */}
-        <div className="w-group mx-auto flex w-[min(46vw,max(26vw,calc(156vh_-_39.9vw)))] flex-col items-center pt-[22.9252vw]">
+            G <= 1.564*vh - 23.9vw, which is the second term. It only binds on
+            very short viewports — at 16:9 and taller the 27.6vw cap wins. The
+            15.6vw floor is a backstop: on an extreme aspect the group
+            overflows rather than collapsing to nothing. */}
+        <div className="w-group mx-auto flex w-[min(27.6vw,max(15.6vw,calc(156.4vh_-_23.9vw)))] flex-col items-center pt-[22.9252vw] [--fs-work:max(24px,2.0408vw)] [--fs-ui:max(13px,1.2245vw)] [--fs-micro:max(11px,0.6122vw)]">
           <motion.div
             ref={titleRef}
             data-block=""
-            className="w-title flex w-full flex-col items-center gap-[1.1vw] text-center"
+            className="w-title flex w-full flex-col items-center gap-[0.66vw] text-center"
             style={{ opacity: titleOpacity, filter: titleFilter }}
           >
             <p className="w-eyebrow text-[length:var(--fs-micro)] uppercase leading-[100%]">
@@ -411,7 +412,7 @@ export default function Works() {
           <motion.div
             ref={listRef}
             data-block=""
-            className="w-list mt-[2vw] grid w-full grid-cols-2 gap-[1.6vw]"
+            className="w-list mt-[1.2vw] grid w-full grid-cols-2 gap-[0.96vw]"
             style={{ opacity: groupOpacity }}
           >
             {PROJECTS.map((item, i) => (
@@ -432,7 +433,7 @@ export default function Works() {
           <motion.div
             ref={ctaRef}
             data-block=""
-            className="w-cta mt-[1.6vw] flex w-full justify-center"
+            className="w-cta mt-[0.96vw] flex w-full justify-center"
             style={{ opacity: groupOpacity }}
           >
             <TransitionLink
@@ -440,7 +441,7 @@ export default function Works() {
               className="pointer-events-auto rounded-full focus-visible:[outline:2px_solid_var(--red)] focus-visible:[outline-offset:4px]"
             >
               <motion.span
-                className="glass relative flex items-center gap-[0.5vw] overflow-hidden rounded-full px-[1.1vw] py-[0.6vw] text-[length:var(--fs-micro)] font-semibold uppercase tracking-[0.08em] leading-[100%]"
+                className="glass relative flex items-center gap-[0.3vw] overflow-hidden rounded-full px-[0.66vw] py-[0.36vw] text-[length:var(--fs-micro)] font-semibold uppercase tracking-[0.08em] leading-[100%]"
                 initial="rest"
                 animate="rest"
                 whileHover={reduced ? undefined : 'hover'}
