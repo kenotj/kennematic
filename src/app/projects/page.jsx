@@ -23,10 +23,9 @@ export default async function ProjectsPage() {
     <>
       <SiteHeader trail={[{ label: 'Projects' }]} />
       <main
-        className="type-sub mx-auto w-full max-w-[min(92vw,1200px)]"
-        style={{ padding: 'calc(var(--pad-header) * 2 + 56px) 0 calc(var(--pad-header) * 4)' }}
+        className="mx-auto w-[calc(100%-2rem)] max-w-[1200px] pt-[calc(var(--spacing-page)*2+56px)] pb-[calc(var(--spacing-page)*4+env(safe-area-inset-bottom))] sm:w-[92vw]"
       >
-        <h1 className="font-display font-extrabold uppercase text-stat leading-[100%]">
+        <h1 className="font-display text-sub-stat leading-[100%] font-extrabold uppercase">
           Projects
         </h1>
         <ProjectIndexList projects={rows} />

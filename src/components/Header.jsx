@@ -2,9 +2,8 @@
 
 /* KENNEMATIC — landing nav: one floating glass pill, top-left.
  *
- * Wordmark + Menu button; everything else lives in the MenuOverlay. The pill
- * carries `.pill-enter` (globals.css) so it joins the `is-ready` entrance —
- * that class is landing-only and must never appear on sub-page chrome.
+ * Wordmark + Menu button; everything else lives in the MenuOverlay. Tailwind
+ * ancestor variants let the pill join the landing-only `is-ready` entrance.
  */
 
 import { useCallback, useState } from 'react';
@@ -23,10 +22,9 @@ import { LiquidFill, liquidInk, LIQUID_INK_TRANSITION } from './site/liquidHover
  * pill's outer edge; a padded pill would leave a dry rim. The pill's own
  * `overflow-hidden` is what rounds off the square corners of each fill. */
 const ITEM_CLASS = [
-  'relative flex items-center px-[16px] py-[10px]',
-  'font-display font-bold uppercase text-[length:var(--fs-micro)] tracking-[0.08em] whitespace-nowrap',
-  'focus-visible:[outline:2px_solid_var(--red)]',
-  'focus-visible:[outline-offset:-2px]',
+  'relative flex min-h-11 items-center px-3.5 py-2.5 sm:px-4',
+  'font-display text-micro font-bold uppercase tracking-[0.08em] whitespace-nowrap',
+  'focus-visible:outline-2 focus-visible:outline-red focus-visible:-outline-offset-2',
 ].join(' ');
 
 const ITEM_MOTION = {
@@ -69,13 +67,9 @@ export default function Header() {
   return (
     <>
       <nav
-        className="header absolute"
-        style={{
-          top: 'calc(var(--top-header) + env(safe-area-inset-top))',
-          left: 'var(--pad-header)',
-        }}
+        className="header absolute top-[calc(var(--spacing-header-top)+env(safe-area-inset-top))] left-page"
       >
-        <div className="pill-enter glass pointer-events-auto flex items-center overflow-hidden rounded-full">
+        <div className="glass pointer-events-auto flex translate-y-0 items-center overflow-hidden rounded-full opacity-100 blur-none transition-[opacity,filter,transform] duration-700 delay-300 ease-expo [.js:not(.is-ready)_&]:-translate-y-2.5 [.js:not(.is-ready)_&]:opacity-0 [.js:not(.is-ready)_&]:blur-[8px] motion-reduce:!translate-y-0 motion-reduce:!blur-none motion-reduce:delay-0 motion-reduce:duration-200">
           <motion.div {...ITEM_MOTION}>
             <Link href="/" onClick={onWordmark} className={ITEM_CLASS}>
               <LiquidFill from="left" scale="sm" />

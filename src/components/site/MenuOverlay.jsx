@@ -19,10 +19,10 @@ import { useProjects } from '../../lib/projectsContext.jsx';
 import { LiquidFill, liquidInk, LIQUID_INK_TRANSITION } from './liquidHover.jsx';
 
 const LINK_CLASS = [
-  'font-display font-extrabold uppercase leading-[110%]',
-  'text-[length:var(--fs-work)]',
-  'focus-visible:[outline:2px_solid_var(--red)]',
-  'focus-visible:[outline-offset:4px]',
+  'flex min-h-14 w-full items-center py-2',
+  'font-display text-[2rem] font-extrabold uppercase leading-[110%]',
+  'sm:min-h-0 sm:w-fit sm:py-0 sm:text-work',
+  'focus-visible:outline-2 focus-visible:outline-red focus-visible:outline-offset-4',
 ].join(' ');
 
 /* Links rest at 85% scale; hovering (or keyboard-focusing) one grows it to
@@ -93,7 +93,7 @@ export default function MenuOverlay({ open, onClose }) {
 
   return (
     <motion.div
-      className="menu-overlay fixed inset-0 z-[60] bg-black/55 [backdrop-filter:blur(24px)_saturate(140%)] [-webkit-backdrop-filter:blur(24px)_saturate(140%)] pointer-events-auto overflow-y-auto"
+      className="menu-overlay pointer-events-auto fixed inset-0 z-[60] min-h-dvh overflow-y-auto bg-black/55 [backdrop-filter:blur(24px)_saturate(140%)] [-webkit-backdrop-filter:blur(24px)_saturate(140%)]"
       role="dialog"
       aria-modal="true"
       aria-label="Menu"
@@ -111,11 +111,7 @@ export default function MenuOverlay({ open, onClose }) {
         animate="rest"
         whileHover="hover"
         whileTap="tap"
-        className="glass absolute overflow-hidden rounded-full px-[18px] py-[10px] font-body uppercase text-[length:var(--fs-micro)] tracking-[0.08em] cursor-pointer text-white focus-visible:[outline:2px_solid_var(--red)] focus-visible:[outline-offset:2px]"
-        style={{
-          top: 'calc(var(--top-header) + env(safe-area-inset-top))',
-          right: 'var(--pad-header)',
-        }}
+        className="glass fixed top-[calc(var(--spacing-header-top)+env(safe-area-inset-top))] right-page min-h-12 cursor-pointer overflow-hidden rounded-full px-5 py-3 font-body text-micro tracking-[0.08em] text-white uppercase focus-visible:outline-2 focus-visible:outline-red focus-visible:outline-offset-2 sm:min-h-11 sm:px-4 sm:py-2.5"
       >
         <LiquidFill from="right" scale="sm" />
         <motion.span className="relative" variants={liquidInk} transition={LIQUID_INK_TRANSITION}>
@@ -124,8 +120,7 @@ export default function MenuOverlay({ open, onClose }) {
       </motion.button>
 
       <motion.nav
-        className="flex min-h-full flex-col justify-center gap-[2.2vw]"
-        style={{ padding: 'calc(var(--pad-header) * 2) var(--pad-header)' }}
+        className="flex min-h-svh flex-col justify-center gap-1 px-page pt-[calc(var(--spacing-header-top)+env(safe-area-inset-top)+5.5rem)] pb-[calc(var(--spacing-page)*2+env(safe-area-inset-bottom))] sm:gap-[2.2vw]"
         variants={list}
         onClick={onClose}
         onMouseLeave={() => setHovered(null)}
@@ -140,18 +135,18 @@ export default function MenuOverlay({ open, onClose }) {
             </NavLabel>
           </Link>
         </motion.div>
-        <motion.div variants={item} className="flex flex-col gap-[0.8vw]">
+        <motion.div variants={item} className="flex flex-col gap-1 sm:gap-[0.8vw]">
           <Link href="/projects" className={LINK_CLASS} {...navHoverProps('projects')}>
             <NavLabel id="projects" hovered={hovered}>
               Projects
             </NavLabel>
           </Link>
-          <div className="flex flex-col gap-[0.4vw] pl-[2vw]">
+          <div className="flex flex-col pl-4 sm:gap-[0.4vw] sm:pl-[2vw]">
             {projects.map((p) => (
               <Link
                 key={p.slug}
                 href={`/projects/${p.slug}`}
-                className="font-body text-[length:var(--fs-ui)] focus-visible:[outline:2px_solid_var(--red)] focus-visible:[outline-offset:4px]"
+                className="flex min-h-12 w-full items-center py-2 font-body text-ui leading-tight focus-visible:outline-2 focus-visible:outline-red focus-visible:outline-offset-4 sm:min-h-0 sm:w-fit sm:py-0"
                 {...navHoverProps(`project:${p.slug}`)}
               >
                 <NavLabel id={`project:${p.slug}`} hovered={hovered} restOpacity={0.7}>

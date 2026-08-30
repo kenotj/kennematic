@@ -20,10 +20,9 @@
  *   2. the services block, which is what the strip PINS on (PIN_FRAC of the
  *      viewport, see plate.jsx measure()).
  *
- * The list is a single row of four glass cards with 16:9 thumbs, sized to the
- * same 64.2857vw measure as the services block so the two screens share
- * left/right margins; the group reads the reading band as one box rather than
- * per block.
+ * The list is a compact responsive grid of glass cards. It becomes a vertical
+ * stack of horizontal cards on phones, then returns to multiple columns and
+ * the original single row as more width becomes available.
  *
  * Cards are links to /projects/[slug]. The root keeps pointer-events-none;
  * only the anchors opt back in, and a fully flown card drops out of
@@ -61,6 +60,18 @@ const BLUR_STEP = 0.25;
 const TITLE_BLUR = 6; /* legacy: (1 - o)^2 * 6px */
 const ROW_BLUR = 12; /* legacy: --fly-blur, fly^2 * 12px */
 const FLY_X = 0.62; /* legacy: --fly-x, 62vw */
+
+/* Every value is a complete static Tailwind string so the scanner can emit the
+   right responsive grid without a runtime style declaration overriding it. */
+const FEATURED_GRID = {
+  0: 'grid-cols-1',
+  1: 'grid-cols-1 max-w-[22rem]',
+  2: 'grid-cols-1 sm:grid-cols-2',
+  3: 'grid-cols-1 sm:grid-cols-3',
+  4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4',
+  5: 'grid-cols-1 sm:grid-cols-3 lg:grid-cols-5',
+  6: 'grid-cols-1 sm:grid-cols-3 lg:grid-cols-6',
+};
 
 const blurCss = (px) => (px > 0 ? `blur(${px}px)` : 'none');
 
@@ -101,14 +112,11 @@ function Card({ item, index, count, progress, metrics, version, reduced }) {
     !reduced && f > 0 && f < 1 ? blurCss(quantize(f * f * ROW_BLUR, BLUR_STEP)) : 'none'
   );
 
-  /* `.is-flying` is preserved for the reduced-motion stylesheet rule, and
-     `.is-flown` drops a fully flown (invisible) card out of hit-testing; the
-     classes flip at most twice per pass, so an imperative toggle costs nothing. */
+  /* A fully flown (invisible) card drops out of hit-testing. */
   useEffect(() => {
     const apply = (f) => {
       const node = ref.current;
       if (!node) return;
-      node.classList.toggle('is-flying', f > 0 && f < 1);
       node.classList.toggle('is-flown', f >= 1);
     };
     apply(fly.get());
@@ -118,14 +126,17 @@ function Card({ item, index, count, progress, metrics, version, reduced }) {
   const hover = reduced ? undefined : 'hover';
 
   return (
-    <motion.div ref={ref} className="w-row min-w-0" style={{ x, opacity, filter }}>
+    <motion.div
+      ref={ref}
+      className="w-row min-w-0 [&.is-flown]:pointer-events-none motion-reduce:!transform-none motion-reduce:!filter-none"
+      style={{ x, opacity, filter }}
+    >
       <TransitionLink
         href={`/projects/${item.slug}`}
         className={[
           'block h-full rounded-[10px]',
           'pointer-events-auto',
-          'focus-visible:[outline:2px_solid_var(--red)]',
-          'focus-visible:[outline-offset:4px]',
+          'focus-visible:outline-2 focus-visible:outline-red focus-visible:outline-offset-4',
         ].join(' ')}
       >
         {/* Hover lives on an INNER motion element so its transform can't fight
@@ -138,7 +149,7 @@ function Card({ item, index, count, progress, metrics, version, reduced }) {
             the eyebrow and title invert together (their opacity utilities
             still apply, which is what keeps the eyebrow secondary on white). */}
         <motion.div
-          className="glass relative h-full overflow-hidden rounded-[10px] p-[0.45vw]"
+          className="glass relative flex h-full overflow-hidden rounded-[10px] p-1 sm:block sm:p-[0.45vw]"
           initial="rest"
           whileHover={hover}
           whileTap={reduced ? undefined : 'tap'}
@@ -158,7 +169,7 @@ function Card({ item, index, count, progress, metrics, version, reduced }) {
           }}
         >
           <LiquidFill />
-          <div className="relative aspect-video w-full overflow-hidden rounded-[7px]">
+          <div className="relative aspect-[4/3] w-[38%] shrink-0 overflow-hidden rounded-[7px] [@media(max-height:600px)]:aspect-[3/2] sm:aspect-video sm:w-full sm:[@media(max-height:600px)]:aspect-[2/1]">
             <motion.div
               className="absolute inset-0"
               style={item.thumb?.url ? undefined : { background: thumbGradient(item.slug) }}
@@ -181,8 +192,8 @@ function Card({ item, index, count, progress, metrics, version, reduced }) {
                 ))}
             </motion.div>
           </div>
-          <div className="relative px-[0.3vw] pb-[0.25vw] pt-[0.55vw]">
-            <p className="m-0 text-[length:var(--fs-micro)] uppercase tracking-[0.1em] opacity-70 whitespace-nowrap overflow-hidden text-ellipsis">
+          <div className="relative flex min-w-0 flex-1 flex-col justify-center px-3 py-2 sm:block sm:px-[0.3vw] sm:pb-[0.25vw] sm:pt-[0.55vw]">
+            <p className="m-0 overflow-hidden text-micro text-ellipsis whitespace-nowrap uppercase opacity-70 tracking-[0.1em]">
               {item.category} · {item.year}
             </p>
             {/* line-clamp still caps a long title at two lines; the min-height
@@ -195,7 +206,7 @@ function Card({ item, index, count, progress, metrics, version, reduced }) {
                 (Coehl) sitting shorter than a two-line one (Born from
                 Nature). */}
             <motion.p
-              className="m-0 mt-[0.25vw] flex min-h-[1.25em] items-start gap-[0.4vw] text-[length:var(--fs-ui)] font-semibold leading-[115%]"
+              className="m-0 mt-1 flex min-h-[1.25em] items-start gap-1 text-ui leading-[115%] font-semibold sm:mt-[0.25vw] sm:gap-[0.4vw]"
               variants={{ rest: { x: 0 }, hover: { x: 4 }, tap: { x: 4 } }}
               transition={{ type: 'spring', stiffness: 320, damping: 26 }}
             >
@@ -216,7 +227,7 @@ function Card({ item, index, count, progress, metrics, version, reduced }) {
             {/* one-line pitch under the title — same voice as the services
                 blurbs (micro size, 145% leading, secondary), clamped so a
                 long summary can't unbalance the row */}
-            <p className="m-0 mt-[0.45vw] line-clamp-2 text-[length:var(--fs-micro)] leading-[145%] opacity-70">
+            <p className="card-summary m-0 mt-1.5 hidden text-micro leading-[145%] opacity-70 sm:line-clamp-2 sm:mt-[0.45vw] [@media(max-height:600px)]:!hidden">
               {item.summary}
             </p>
           </div>
@@ -239,7 +250,7 @@ function KineticWord({ text, enter, index, accent, reduced }) {
   const w = useTransform(enter, (o) => r3(clamp01(norm(o, index * 0.18, index * 0.18 + 0.5))));
   const y = useTransform(w, (v) => `${r3((1 - v) * 0.55)}em`);
 
-  const cls = accent ? 'w-script type-accent leading-[0]' : '';
+  const cls = accent ? 'w-script font-display font-light italic leading-[0]' : '';
   if (reduced) return <span className={cls}>{text}</span>;
   return (
     <motion.span className={`inline-block ${cls}`} style={{ y, opacity: w }}>
@@ -254,11 +265,11 @@ export default function Works() {
   const { progress, metrics, reduced } = usePlate();
   const { featured } = useProjects();
 
-  const rootRef = useRef(null);
   const titleRef = useRef(null);
   const ctaRef = useRef(null);
   const listRef = useRef(null);
   const servicesRef = useRef(null);
+  const gridClass = FEATURED_GRID[Math.min(featured.length, 6)] || FEATURED_GRID[6];
 
   /* Resize tick. metrics is mutated in place, so MotionValues that depend on
      geometry need something to re-fire on; bumping this drives them all. */
@@ -315,15 +326,6 @@ export default function Works() {
     p >= SEC2_SHOW[0] && p <= SEC2_SHOW[1] ? 'visible' : 'hidden'
   );
 
-  useEffect(() => {
-    const apply = (v) => {
-      const node = rootRef.current;
-      if (node) node.classList.toggle('is-hidden', v === 'hidden');
-    };
-    apply(visibility.get());
-    return visibility.on('change', apply);
-  }, [visibility]);
-
   /* ------------------------------------------------- per-block opacity */
 
   /* The legacy "reading band": a block is lit only while it sits inside a
@@ -377,22 +379,12 @@ export default function Works() {
       : 'none'
   );
 
-  useEffect(() => {
-    const apply = (o) => {
-      const node = titleRef.current;
-      if (node) node.classList.toggle('is-entering', o > 0 && o < 1);
-    };
-    apply(titleRaw.get());
-    return titleRaw.on('change', apply);
-  }, [titleRaw]);
-
   /* ------------------------------------------------------------- render */
 
   return (
     <motion.div
-      ref={rootRef}
       id="sec2"
-      className="sec2 is-hidden fixed inset-0 z-[6] overflow-hidden pointer-events-none font-medium font-body"
+      className="sec2 fixed inset-0 z-[6] overflow-hidden pointer-events-none font-body font-medium"
       style={{ visibility }}
     >
       <motion.div
@@ -400,7 +392,7 @@ export default function Works() {
         className="strip absolute top-0 left-0 w-[100vw] will-change-transform"
         style={{ y: s2y }}
       >
-        {/* The featured group — heading, the 2x2 card grid, view-all — as ONE
+        {/* The featured group — heading, responsive card grid, view-all — as ONE
             centred flow column, in reading order. The wrapper is deliberately
             unpositioned: measure() reads each block's offsetTop expecting
             `.strip` to be the offsetParent, so a `relative`/`absolute` wrapper
@@ -408,24 +400,22 @@ export default function Works() {
             band. The padding-top (not a `top`) is what holds the heading at its
             old 22.9252vw, which is where s2Start is anchored.
 
-            Width: 64.2857vw — the exact measure of the services block below,
-            so the two screens share left/right margins. The cards run as ONE
-            row of four inside it (each ~14.7vw), which keeps the group well
-            under a viewport tall — no vh clamp needed. Type rides the global
-            --fs-* scale untouched, same as every other screen. */}
-        <div className="w-group mx-auto flex w-[64.2857vw] flex-col items-center pt-[22.9252vw]">
+            Width is mobile-first and returns to the original 64.2857vw
+            reading measure on wide screens. The responsive column count keeps
+            the group short enough for the viewport at each breakpoint. */}
+        <div className="w-group mx-auto flex w-[calc(100vw-2rem)] flex-col items-center pt-[32svh] sm:w-[82vw] sm:pt-[28vw] lg:w-[64.2857vw] lg:pt-[22.9252vw]">
           <motion.div
             ref={titleRef}
             data-block=""
-            className="w-title flex w-full flex-col items-center gap-[1.1vw] text-center"
+            className="w-title flex w-full flex-col items-center gap-2 text-center motion-reduce:!filter-none sm:gap-[1.1vw]"
             style={{ opacity: titleOpacity, filter: titleFilter }}
           >
-            <p className="w-eyebrow text-[length:var(--fs-micro)] uppercase leading-[100%]">
+            <p className="w-eyebrow text-micro leading-[100%] uppercase">
               Featured projects
             </p>
             {/* each word rides its own slice of the enter progress — kinetic,
                 but still fully scroll-scrubbed and reversible */}
-            <h2 className="w-mark font-display font-extrabold text-[length:var(--fs-work)] leading-[100%]">
+            <h2 className="w-mark font-display text-work leading-[100%] font-extrabold">
               <KineticWord text="Made" enter={titleRaw} index={0} reduced={reduced} />{' '}
               <KineticWord text="to" enter={titleRaw} index={1} reduced={reduced} />{' '}
               <KineticWord text="move" enter={titleRaw} index={2} reduced={reduced} />{' '}
@@ -436,11 +426,8 @@ export default function Works() {
           <motion.div
             ref={listRef}
             data-block=""
-            className="w-list mt-[2vw] grid w-full gap-x-[1.8vw]"
-            style={{
-              opacity: groupOpacity,
-              gridTemplateColumns: `repeat(${featured.length}, minmax(0, 1fr))`,
-            }}
+            className={`w-list mt-4 grid w-full max-w-[32rem] justify-center gap-3 sm:mt-[2vw] sm:max-w-none sm:gap-x-[1.8vw] ${gridClass}`}
+            style={{ opacity: groupOpacity }}
           >
             {featured.map((item, i) => (
               <Card
@@ -461,15 +448,15 @@ export default function Works() {
           <motion.div
             ref={ctaRef}
             data-block=""
-            className="w-cta mt-[1.6vw] flex w-full justify-center"
+            className="w-cta mt-4 flex w-full justify-center sm:mt-[1.6vw]"
             style={{ opacity: groupOpacity }}
           >
             <TransitionLink
               href="/projects"
-              className="pointer-events-auto rounded-full focus-visible:[outline:2px_solid_var(--red)] focus-visible:[outline-offset:4px]"
+              className="pointer-events-auto rounded-full focus-visible:outline-2 focus-visible:outline-red focus-visible:outline-offset-4"
             >
               <motion.span
-                className="glass relative flex items-center gap-[0.5vw] overflow-hidden rounded-full px-[1.1vw] py-[0.6vw] text-[length:var(--fs-micro)] font-semibold uppercase tracking-[0.08em] leading-[100%]"
+                className="glass relative flex min-h-11 items-center gap-2 overflow-hidden rounded-full px-4 py-3 text-micro leading-[100%] font-semibold tracking-[0.08em] uppercase sm:gap-[0.5vw] sm:px-[1.1vw] sm:py-[0.6vw]"
                 initial="rest"
                 animate="rest"
                 whileHover={reduced ? undefined : 'hover'}
@@ -506,28 +493,27 @@ export default function Works() {
           </motion.div>
         </div>
 
-        {/* The pinned block. Two columns on purpose — four stacked rows would
-            push it past the reading band's height ceiling on a 16:9 viewport
-            and it would never reach full opacity. */}
+        {/* The pinned block stacks on phones and returns to two columns once
+            there is enough width to keep it inside the reading band. */}
         <motion.div
           ref={servicesRef}
           data-block=""
-          className="w-services absolute top-[96vw] left-[50%] w-[64.2857vw] -translate-x-1/2"
+          className="w-services absolute top-[max(760px,135svh)] left-1/2 w-[calc(100vw-2rem)] -translate-x-1/2 sm:w-[82vw] lg:top-[96vw] lg:w-[64.2857vw]"
           style={{ opacity: servicesOpacity }}
         >
-          <p className="m-0 text-[length:var(--fs-micro)] uppercase tracking-[0.1em] leading-[100%] opacity-70">
+          <p className="m-0 text-micro leading-[100%] tracking-[0.1em] uppercase opacity-70">
             What I provide
           </p>
-          <ul className="m-0 mt-[1.8vw] grid list-none grid-cols-2 gap-x-[1.8vw] gap-y-[1.6vw] p-0">
+          <ul className="m-0 mt-4 grid list-none grid-cols-1 gap-4 p-0 sm:mt-[1.8vw] sm:grid-cols-2 sm:gap-x-[1.8vw] sm:gap-y-[1.6vw]">
             {SERVICES.map((s, i) => (
-              <li key={s.name} className="border-t border-white/15 pt-[0.9vw]">
-                <p className="m-0 flex items-baseline gap-[0.7vw] text-[length:var(--fs-ui)] font-semibold leading-[115%]">
-                  <span className="text-[length:var(--fs-micro)] font-medium tabular-nums opacity-50">
+              <li key={s.name} className="border-t border-white/15 pt-3 sm:pt-[0.9vw]">
+                <p className="m-0 flex items-baseline gap-2 text-ui leading-[115%] font-semibold sm:gap-[0.7vw]">
+                  <span className="text-micro font-medium tabular-nums opacity-50">
                     {String(i + 1).padStart(2, '0')}
                   </span>
                   {s.name}
                 </p>
-                <p className="m-0 mt-[0.45vw] text-[length:var(--fs-micro)] leading-[145%] opacity-70">
+                <p className="m-0 mt-1.5 text-micro leading-[145%] opacity-70 sm:mt-[0.45vw]">
                   {s.blurb}
                 </p>
               </li>

@@ -1,215 +1,101 @@
 @import "tailwindcss";
 
-/* ===========================================================
-   Design tokens — ported verbatim from legacy/style.css :root
-   Namespaced names generate Tailwind utilities (font-display,
-   text-ui, ease-expo, …); the raw fs / gap / pad names are kept
-   identical to legacy so arbitrary values such as
-   text-[length:var(--fs-ui)] resolve exactly as before.
-   (Keep star-slash sequences out of this comment — one inside a
-   token glob silently terminated it and voided the whole block.)
-   =========================================================== */
+/* Tailwind owns the shared design system. The fluid steps keep the cinematic
+   desktop scale while giving phones readable minimum sizes. */
 @theme {
-  /* color */
-  --color-red: #EB0004;
-  --red: #EB0004;
+  --color-red: #eb0004;
 
-  /* type scale (raw legacy names) — every step runs at 80% of the legacy vw
-     value EXCEPT display (the KENNEMATIC master heading, kept full size).
-     Every step floors at 9px, so type keeps shrinking with the viewport down
-     to the smallest legible size instead of locking at a larger step. */
-  --fs-display: max(9px, 12.4vw);
-  --fs-stat: max(9px, 5.4422vw);
-  --fs-work: max(9px, 2.7211vw);
-  --fs-ui: max(9px, 1.6327vw);
-  --fs-micro: max(9px, 0.8163vw);
+  --text-display: clamp(2.5rem, 12.4vw, 13rem);
+  --text-display--line-height: 0.88;
+  --text-stat: clamp(2.5rem, 5.4422vw, 6rem);
+  --text-stat--line-height: 0.95;
+  --text-work: clamp(1.375rem, 2.7211vw, 3rem);
+  --text-work--line-height: 1;
+  --text-ui: clamp(1rem, 1.6327vw, 1.625rem);
+  --text-ui--line-height: 1.2;
+  --text-micro: clamp(0.6875rem, 0.8163vw, 0.875rem);
+  --text-micro--line-height: 1.2;
 
-  /* type scale (Tailwind font-size utilities: text-display, text-stat, …) */
-  --text-display: max(9px, 12.4vw);
-  --text-display--line-height: 100%;
-  --text-stat: max(9px, 5.4422vw);
-  --text-stat--line-height: 100%;
-  --text-work: max(9px, 2.7211vw);
-  --text-work--line-height: 100%;
-  --text-ui: max(9px, 1.6327vw);
-  --text-ui--line-height: 100%;
-  --text-micro: max(9px, 0.8163vw);
-  --text-micro--line-height: 100%;
+  --text-sub-stat: clamp(2.5rem, 4.3537vw, 4.75rem);
+  --text-sub-stat--line-height: 0.95;
+  --text-sub-work: clamp(1.375rem, 2.1769vw, 2.375rem);
+  --text-sub-work--line-height: 1.05;
+  --text-sub-ui: clamp(1rem, 1.3061vw, 1.25rem);
+  --text-sub-ui--line-height: 1.5;
+  --text-sub-micro: clamp(0.6875rem, 0.6531vw, 0.75rem);
+  --text-sub-micro--line-height: 1.2;
 
-  /* spacing */
-  --gap-title: max(10px, 1.6327vw);
-  --pad-header: max(16px, 2.7211vw);
-  --top-header: max(16px, 2.1769vw);
+  --spacing-page: clamp(1rem, 2.7211vw, 3rem);
+  --spacing-header-top: clamp(1rem, 2.1769vw, 2.5rem);
+  --spacing-title-gap: clamp(0.625rem, 1.6327vw, 1.75rem);
 
-  /* motion */
   --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
-
-  /* layout */
-  --runway: 900vh;
 }
 
-/* Font tokens live in a separate `@theme inline` block because they reference
-   another CSS variable: next/font emits a hashed family name reachable only
-   through --font-montserrat, and a plain @theme would inline the var()
-   reference into utilities where it never resolves. */
 @theme inline {
   --font-display: var(--font-montserrat), sans-serif;
-  --font-body: var(--font-montserrat), system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --font-body: var(--font-montserrat), system-ui, -apple-system, "Helvetica Neue", Arial,
+    sans-serif;
 }
 
 @layer base {
-  *,
-  *::before,
-  *::after { box-sizing: border-box; }
-
   html,
   body {
-    margin: 0;
-    padding: 0;
+    min-width: 320px;
     background: #000;
     overscroll-behavior: none;
   }
 
   body {
-    font-family: var(--font-montserrat), system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    overflow-x: clip;
     color: #fff;
+    font-family: var(--font-montserrat), system-ui, -apple-system, "Helvetica Neue", Arial,
+      sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  h1, h2, p, dl, dt, dd { margin: 0; }
-  dd { margin-inline-start: 0; }
-  a { color: inherit; text-decoration: none; }
-}
-
-/* ---------- accent type ---------- */
-/* Fills the role Alex Brush used to play (wordmark accent, stat numbers,
-   "(true)") — same family as everything else, contrast comes from style. */
-.type-accent {
-  font-family: var(--font-montserrat), sans-serif;
-  font-style: italic;
-  font-weight: 300;
-}
-
-/* ---------- sub-page type ---------- */
-/* Project sub-pages run the type scale at 80% of the global tokens (which
-   are themselves 80% of legacy) — plain document pages read better a step
-   quieter than the landing's choreography. Put this on the page's <main>;
-   the fixed header/breadcrumb sits outside it and keeps the global size.
-   Both the raw --fs-* names and the --text-* utility vars are overridden so
-   `text-stat` and `text-[length:var(--fs-ui)]` shrink alike. The 9px floor
-   matches the global scale. */
-.type-sub {
-  --fs-stat: max(9px, 4.3537vw);
-  --fs-work: max(9px, 2.1769vw);
-  --fs-ui: max(9px, 1.3061vw);
-  --fs-micro: max(9px, 0.6531vw);
-  --text-stat: max(9px, 4.3537vw);
-  --text-work: max(9px, 2.1769vw);
-  --text-ui: max(9px, 1.3061vw);
-  --text-micro: max(9px, 0.6531vw);
-}
-
-/* ---------- case study ---------- */
-/* The section label hangs in the left margin beside the copy. Nudge it down so
-   its first line sits on the body's first baseline instead of on the box top —
-   half the difference between the two line boxes gets close enough for type
-   this small. Below md the grid collapses and the label stacks above the copy,
-   where the nudge would read as a stray gap, so it only applies from md up. */
-@media (min-width: 768px) {
-  .case-label {
-    padding-top: calc((var(--fs-ui) * 1.5 - var(--fs-micro) * 1.2) / 2);
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
   }
 }
 
-/* ---------- liquid glass ---------- */
-/* The one glass recipe for the whole site (nav pill, menu sheet, project
-   cards). backdrop-filter over the video layers is what sells it; the inset
-   highlight is the "wet edge". Keep it an accent — type stays stark. */
-.glass {
-  background: rgba(255, 255, 255, 0.07);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
-  backdrop-filter: blur(16px) saturate(150%);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+/* A first-class Tailwind utility shared by interactive glass surfaces. */
+@utility glass {
+  border: 1px solid rgb(255 255 255 / 0.14);
+  background: rgb(255 255 255 / 0.07);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 8px 24px rgba(0, 0, 0, 0.35);
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    0 8px 24px rgb(0 0 0 / 0.35);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
 }
 
-/* ---------- plate canvases ---------- */
-canvas.plate { opacity: 0; transition: opacity 240ms linear; }
-canvas.plate.is-live { opacity: 1; }
-.is-covered { visibility: hidden; }
-
-/* ---------- runway ---------- */
-.runway { height: var(--runway); }
-
-/* ---------- project rows ---------- */
-/* A fully flown row is invisible but still translated only ±62vw, so part of
-   it can remain inside the viewport — without this it would stay clickable. */
-.w-row.is-flown { pointer-events: none; }
-
-/* ---------- entrance (class-driven; must be correct with JS off) ---------- */
-/* `.pill-enter` is LANDING-ONLY: it keys off `is-ready`, which only fires
-   inside PlateProvider. Sub-page pills must not carry it or they never show. */
-.js .title__mark { opacity: 0; filter: blur(14px); }
-.js .title__tag { opacity: 0; }
-.js .pill-enter { opacity: 0; filter: blur(8px); transform: translateY(-10px); }
-
-.js.is-ready .title__mark {
-  opacity: 1;
-  filter: blur(0);
-  transition: opacity 1400ms var(--ease-expo), filter 1400ms var(--ease-expo);
-}
-.js.is-ready .title__tag {
-  opacity: 1;
-  transition: opacity 700ms var(--ease-expo) 380ms;
-}
-.js.is-ready .pill-enter {
-  opacity: 1;
-  filter: blur(0);
-  transform: translateY(0);
-  transition: opacity 700ms var(--ease-expo) 300ms, filter 700ms var(--ease-expo) 300ms, transform 700ms var(--ease-expo) 300ms;
-}
-
-/* ---------- route transitions ---------- */
-/* Driven by TransitionLink's document.startViewTransition(). The outgoing page
-   pulls back and blurs, the incoming one rises through it — the same expo
-   vocabulary the scroll stage uses, so a navigation reads as part of the same
-   piece rather than a document swap. TransitionLink skips the API entirely
-   under reduced motion, so these never run there. */
+/* The View Transitions API exposes pseudo-elements that cannot live on a JSX
+   node, so these two short animations intentionally remain global. */
 ::view-transition-old(root) {
-  animation: vt-out 300ms var(--ease-expo) both;
+  animation: view-out 300ms var(--ease-expo) both;
 }
+
 ::view-transition-new(root) {
-  animation: vt-in 460ms var(--ease-expo) both;
+  animation: view-in 460ms var(--ease-expo) both;
 }
 
-@keyframes vt-out {
-  to { opacity: 0; filter: blur(10px); transform: scale(1.03); }
-}
-@keyframes vt-in {
-  from { opacity: 0; filter: blur(10px); transform: translateY(22px); }
-}
-
-/* ---------- reduced motion ---------- */
-@media (prefers-reduced-motion: reduce) {
-  .exit-3d { transform: none; }
-  .exit-3d.is-exiting { filter: none; }
-  .rise { transform: none; }
-  .rise.is-anim { filter: none; }
-  .w-row { transform: none; }
-  .w-row.is-flying { filter: none; }
-  .w-title.is-entering { filter: none; }
-  .js .title__mark { filter: none; }
-  .js .pill-enter { filter: none; transform: none; }
-  .js.is-ready .title__mark,
-  .js.is-ready .title__tag,
-  .js.is-ready .pill-enter {
-    filter: none;
-    transform: none;
-    transition: opacity 200ms linear;
-    transition-delay: 0ms;
+@keyframes view-out {
+  to {
+    opacity: 0;
+    filter: blur(10px);
+    transform: scale(1.03);
   }
-  .stage canvas.plate { transition: none; }
+}
+
+@keyframes view-in {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(22px);
+  }
 }

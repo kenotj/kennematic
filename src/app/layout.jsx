@@ -21,9 +21,32 @@ const montserrat = Montserrat({
   display: 'swap',
 });
 
+const SITE_TITLE = 'KENNEMATIC';
+const SITE_DESCRIPTION =
+  'KENNEMATIC — Kenneth Ong, AI director. Films and advert content made with generative video.';
+const SITE_ORIGIN =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : 'http://localhost:3000');
+
 export const metadata = {
-  title: 'KENNEMATIC',
-  description: 'KENNEMATIC — Kenneth Ong, AI director. Films and advert content made with generative video.',
+  metadataBase: new URL(SITE_ORIGIN),
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    type: 'website',
+    siteName: SITE_TITLE,
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: 'KENNEMATIC' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: ['/og.png'],
+  },
 };
 
 export const viewport = {

@@ -9,7 +9,7 @@
  * viewport centre. Chrome is pointer-events-none; only the anchors opt in.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { motion, useMotionValue, useTransform } from 'framer-motion';
 
 import { usePlate } from '../lib/plate.jsx';
@@ -31,13 +31,11 @@ const LINK_CLASS = [
   'pointer-events-auto underline',
   '[transition:opacity_200ms_linear]',
   '[@media(hover:hover)_and_(pointer:fine)]:hover:opacity-[.65]',
-  'focus-visible:[outline:2px_solid_var(--red)]',
-  'focus-visible:[outline-offset:4px]',
+  'focus-visible:outline-2 focus-visible:outline-red focus-visible:outline-offset-4',
 ].join(' ');
 
 export default function Contact() {
   const { progress, reduced } = usePlate();
-  const ref = useRef(null);
 
   /* rise in, then hold — there is intentionally no out ramp */
   const inV = useTransform(progress, (p) => {
@@ -63,42 +61,18 @@ export default function Contact() {
     reducedV.set(reduced ? 1 : 0);
   }, [reduced, reducedV]);
 
-  /* class bookkeeping only — imperative, so it never triggers a re-render */
-  useEffect(() => {
-    const node = ref.current;
-    if (!node) return;
-    let prevAnim = null;
-    let prevHidden = null;
-    const apply = (v) => {
-      const anim = v > 0 && v < 1;
-      const hidden = v <= 0;
-      if (anim !== prevAnim) {
-        prevAnim = anim;
-        node.classList.toggle('is-anim', anim);
-      }
-      if (hidden !== prevHidden) {
-        prevHidden = hidden;
-        node.classList.toggle('is-hidden', hidden);
-      }
-    };
-    apply(inV.get());
-    return inV.on('change', apply);
-  }, [inV]);
-
   return (
     <motion.div
-      ref={ref}
-      className="contact rise absolute left-0 right-0 flex flex-col items-center gap-[0.8em] font-body font-medium text-ui text-center"
+      className="contact absolute right-0 left-0 flex flex-col items-center gap-[0.8em] px-page text-center font-body text-ui font-medium motion-reduce:!transform-none motion-reduce:!filter-none"
       style={{
         top: '38%',
         opacity: inV,
-        '--in': inV,
         transform,
         filter,
         visibility,
       }}
     >
-      <p className="m-0 uppercase text-[length:var(--fs-micro)] opacity-70">
+      <p className="m-0 text-micro uppercase opacity-70">
         Let&apos;s make something move
       </p>
       <a href={`mailto:${CONTACT_EMAIL}`} className={LINK_CLASS}>
@@ -109,7 +83,7 @@ export default function Contact() {
           push that gap under the email address and leave the block sitting
           visibly off its 38% centre. */}
       {SOCIALS.length > 0 && (
-        <div className="flex gap-[1.5em] text-[length:var(--fs-micro)] uppercase">
+        <div className="flex gap-[1.5em] text-micro uppercase">
           {SOCIALS.map((s) => (
             <a key={s.label} href={s.href} target="_blank" rel="noreferrer" className={LINK_CLASS}>
               {s.label}

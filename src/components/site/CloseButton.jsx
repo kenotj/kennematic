@@ -39,11 +39,7 @@ export default function CloseButton() {
       animate="rest"
       whileHover="hover"
       whileTap="tap"
-      className="glass fixed z-50 block overflow-hidden rounded-full px-[11px] py-[10px] text-[length:var(--fs-micro)] text-white focus-visible:[outline:2px_solid_var(--red)] focus-visible:[outline-offset:-2px]"
-      style={{
-        top: 'calc(var(--top-header) + env(safe-area-inset-top))',
-        right: 'var(--pad-header)',
-      }}
+      className="glass fixed top-[calc(var(--spacing-header-top)+env(safe-area-inset-top))] right-page z-50 flex size-11 items-center justify-center overflow-hidden rounded-full text-micro text-white focus-visible:-outline-offset-2 focus-visible:outline-2 focus-visible:outline-red"
     >
       <LiquidFill from="right" scale="sm" />
       <motion.span
