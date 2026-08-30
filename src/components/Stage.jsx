@@ -14,7 +14,7 @@ import { motion, useTransform } from 'framer-motion';
 
 import { useScrub, useRevealValue } from '../lib/useScrub.js';
 import { norm, r3 } from '../lib/easing.js';
-import { A, FADE_A, VIDEO_POSTER } from '../lib/constants.js';
+import { A, FADE_A, VIDEO_SRC } from '../lib/constants.js';
 
 const MEDIA_STYLE = {
   position: 'absolute',
@@ -30,7 +30,7 @@ export default function Stage() {
   const rootRef = useRef(null);
 
   const revealA = useRevealValue(A);
-  const plateSrc = useScrub(0, { videoRef, canvasRef });
+  useScrub(0, { videoRef, canvasRef });
 
   /* opacity: calc(1 - var(--stage-out)) */
   const opacity = useTransform(revealA, (ra) => 1 - r3(norm(ra, FADE_A[0], FADE_A[1])));
@@ -47,30 +47,13 @@ export default function Stage() {
 
   return (
     <motion.div ref={rootRef} className="stage fixed inset-0 z-0" style={{ opacity }}>
-      {/* Frame 0, 21 KB, server-rendered and preloaded in <head> — the plate
-          is on screen before the mp4 request has left the browser. It sits
-          under both the <video> and the canvas, which open on the same frame,
-          so neither hand-off is visible. */}
-      <img
-        src={VIDEO_POSTER}
-        alt=""
-        aria-hidden="true"
-        fetchPriority="high"
-        decoding="async"
-        style={MEDIA_STYLE}
-      />
-      {/* No src until useScrub hands one over: the plate's bytes are fetched
-          once, by the frame bank, and shared with every layer as a blob URL.
-          A hard-coded src with preload="auto" meant the 5.7 MB file came down
-          twice in parallel — once for the element, once for the bank. */}
       <video
         ref={videoRef}
         id="v1"
-        src={plateSrc || undefined}
-        poster={VIDEO_POSTER}
+        src={VIDEO_SRC}
         muted
         playsInline
-        preload={plateSrc ? 'auto' : 'none'}
+        preload="auto"
         tabIndex={-1}
         aria-hidden="true"
         style={MEDIA_STYLE}

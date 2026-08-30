@@ -5,7 +5,6 @@ import { LiquidDefs } from '../components/site/liquidHover.jsx';
 import RouteWatcher from '../components/site/RouteWatcher.jsx';
 import { ProjectsProvider } from '../lib/projectsContext.jsx';
 import { getAllProjects, getFeaturedProjects } from '../lib/db.js';
-import { VIDEO_POSTER, VIDEO_SRC } from '../lib/constants.js';
 
 /* Project content lives in Postgres; hourly ISR keeps every route static
  * between edits. Editing the table + waiting out (or on-demand busting) this
@@ -51,14 +50,6 @@ export default async function RootLayout({ children }) {
     <html lang="en" className={montserrat.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: JS_CLASS }} />
-        {/* The plate's first frame. Fetching it at high priority from <head>
-            puts it on screen in the first paint, instead of waiting on the
-            image's turn behind the fonts. */}
-        <link rel="preload" as="image" href={VIDEO_POSTER} fetchPriority="high" />
-        {/* The plate itself. The bank only fetches it once hydration runs;
-            preloading at low priority starts those bytes during parse without
-            outranking the scripts that have to run first. */}
-        <link rel="preload" as="fetch" href={VIDEO_SRC} fetchPriority="low" />
       </head>
       <body>
         {/* The goo filters every LiquidFill references. Defined once at the
