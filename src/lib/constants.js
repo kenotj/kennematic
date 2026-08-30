@@ -63,7 +63,19 @@ export const titleOut = A * TITLE_Q;
 export const titleIn = B + (1 - B) * (1 - TITLE_Q);
 
 /* media */
-export const VIDEO_SRC = 'https://r2.motionsites.dev/motionsites/assets/e3b8ef71df3e.mp4';
+/* Self-hosted, and deliberately so: the frame bank has to `fetch()` these
+   bytes to demux them, and the R2 bucket this used to point at serves no
+   CORS headers — that fetch failed on every load, so the WebCodecs path never
+   ran and the site silently fell back to <video> seek-scrubbing. Same origin
+   also means no preflight, no third-party DNS + TLS on the critical path.
+   2.6 MB re-encode of the 5.7 MB original (crf 25, 1s GOPs, faststart;
+   SSIM 0.991 against the source). */
+export const VIDEO_SRC = '/plate.mp4';
+/* Frame 0 of VIDEO_SRC, 21 KB. It paints the plate on the first render pass,
+   before the 5.7 MB mp4 has begun to arrive: the <video> and the decoded
+   canvas both land on this exact frame, so the hand-off is invisible. Every
+   layer sits on it while the bank builds — nothing else is on screen at t=0. */
+export const VIDEO_POSTER = '/plate-poster.webp';
 
 /* ---------------------------------------------------------------- content */
 

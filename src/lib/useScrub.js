@@ -19,7 +19,7 @@
  *      `bank.prefetch(t, velocity)` so the decoder warms ahead of travel.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useMotionValue } from 'framer-motion';
 
 import { usePlate } from './plate.jsx';
@@ -58,6 +58,10 @@ const engine = {
   bank: null,
   bankBuilding: false,
   bankTimer: 0,
+  /* Blob URL of the mp4 the bank already downloaded, shared by every layer's
+     <video>. Null until the download lands (or, if the bank cannot build at
+     all, replaced by VIDEO_SRC so the fallback still has something to seek). */
+  videoSrc: null,
 };
 
 function duration() {
@@ -137,6 +141,21 @@ function createLayer(index, video, canvas) {
   }
 
   return L;
+}
+
+/* Every <video> ships with `preload="none"` and no src: the file is fetched
+ * once, by the frame bank, and handed to the layers here. Before that the
+ * poster attribute holds the frame. */
+/* Layers subscribe so the source lands through React, not as a DOM write.
+ * Writing `video.src` / `video.preload` imperatively loses: the provider's
+ * `motionReady` flip re-renders every layer moments later and React re-asserts
+ * `preload="none"` from the JSX, aborting the load that had just started. */
+const sourceSubscribers = new Set();
+
+function setVideoSource(url) {
+  if (!url || engine.videoSrc === url) return;
+  engine.videoSrc = url;
+  for (const notify of sourceSubscribers) notify(url);
 }
 
 function issueSeek(L, t) {
@@ -336,7 +355,7 @@ function ensureBank() {
   try {
     // signature is createFrameBank(src, opts) — passing an options object as the
     // first arg silently fetches "[object Object]" and degrades to video scrub.
-    bank = createFrameBank(VIDEO_SRC, { reduced: engine.reduced });
+    bank = createFrameBank(VIDEO_SRC, { reduced: engine.reduced, onSource: setVideoSource });
   } catch (e) {
     engine.bankBuilding = false;
     return;
@@ -351,8 +370,15 @@ function ensureBank() {
       engine.bankBuilding = false;
       /* force a repaint on every layer with the newly available frames */
       for (const L of engine.layers) if (L) { L.cur = -1; }
+      /* No WebCodecs, or the build failed before the fetch: the layers still
+         have no source. Point them at the network file so the <video> scrub
+         path works rather than leaving every layer on the poster. */
+      if (!engine.videoSrc) setVideoSource(VIDEO_SRC);
     })
-    .catch(() => { engine.bankBuilding = false; });
+    .catch(() => {
+      engine.bankBuilding = false;
+      if (!engine.videoSrc) setVideoSource(VIDEO_SRC);
+    });
 }
 
 function releaseBank() {
@@ -363,6 +389,11 @@ function releaseBank() {
     engine.bank = null;
     engine.bankBuilding = false;
     if (bank && typeof bank.destroy === 'function') { try { bank.destroy(); } catch (e) {} }
+    /* every layer is gone by now, so nothing is still reading the blob */
+    if (engine.videoSrc && engine.videoSrc.startsWith('blob:')) {
+      try { URL.revokeObjectURL(engine.videoSrc); } catch (e) {}
+      engine.videoSrc = null;
+    }
   }, BANK_IDLE_DESTROY);
 }
 
@@ -376,13 +407,25 @@ function releaseBank() {
  *   videoRef   ref to the layer's <video> (fallback path + duration source)
  *   canvasRef  ref to the layer's <canvas class="plate"> (bank path)
  *
- * Returns nothing — all painting is imperative, outside React's render cycle.
+ * Returns the plate's video source (or null while it is still coming down):
+ * render it as the layer's <video src>, with preload driven off the same
+ * value. All painting stays imperative, outside React's render cycle.
  * The engine reads `progress` / `metrics` / `reduced` from usePlate(); the
  * first-registered layer seeds them and the rAF loop starts on first mount and
  * stops when the last layer unmounts.
  */
 export function useScrub(index, { videoRef, canvasRef }) {
   const { progress, metrics, reduced, motionReady } = usePlate();
+
+  /* null until the plate's bytes are available — see setVideoSource. The
+     layer renders its poster until then. */
+  const [videoSrc, setVideoSrc] = useState(engine.videoSrc);
+
+  useEffect(() => {
+    setVideoSrc(engine.videoSrc);
+    sourceSubscribers.add(setVideoSrc);
+    return () => { sourceSubscribers.delete(setVideoSrc); };
+  }, []);
 
   useEffect(() => {
     const layer = createLayer(index, videoRef.current, canvasRef.current);
@@ -406,7 +449,9 @@ export function useScrub(index, { videoRef, canvasRef }) {
       if (engine.count === 0) { stopLoop(); releaseBank(); }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index, progress, metrics, reduced, motionReady]);
+  }, [index, progress, metrics, reduced, motionReady, videoSrc]);
+
+  return videoSrc;
 }
 
 /**

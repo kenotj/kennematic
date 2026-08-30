@@ -88,7 +88,13 @@ function descriptionFor(file, trackId) {
   return null;
 }
 
-function fetchAndDemux(src) {
+/* The mp4 is streamed into MP4Box as it arrives rather than parsed in one
+ * pass at the end, and the same bytes are handed back as a blob URL through
+ * `onSource`. Every <video> on the page then scrubs off that blob instead of
+ * re-downloading the file — one network fetch for the whole plate, where the
+ * old `preload="auto"` + `fetch()` pair meant two concurrent 5.7 MB downloads
+ * competing for the first-load bandwidth. */
+function fetchAndDemux(src, onSource) {
   return new Promise((resolve, reject) => {
     const file = MP4Box.createFile();
     const samples = [];
@@ -112,17 +118,49 @@ function fetchAndDemux(src) {
     };
     file.onSamples = (_id, _user, list) => { for (const s of list) samples.push(s); };
 
-    fetch(src).then((r) => {
-      if (!r.ok) throw new Error('http ' + r.status);
-      return r.arrayBuffer();
-    }).then((buf) => {
-      buf.fileStart = 0;
-      file.appendBuffer(buf);
+    const finish = (chunks) => {
       file.flush();
       if (!info) { reject(new Error('no info')); return; }
       if (!samples.length) { reject(new Error('no samples')); return; }
+      /* Hand the bytes to the <video> fallback before the decode leg starts —
+       * seeking a blob URL is local, so the fallback is live the moment the
+       * download lands rather than after the whole bank has been encoded. */
+      if (onSource) {
+        try { onSource(URL.createObjectURL(new Blob(chunks, { type: 'video/mp4' }))); }
+        catch (e) { /* the bank path does not depend on this */ }
+      }
       info.samples = samples;
       resolve(info);
+    };
+
+    fetch(src).then(async (r) => {
+      if (!r.ok) throw new Error('http ' + r.status);
+
+      if (!r.body || typeof r.body.getReader !== 'function') {
+        const buf = await r.arrayBuffer();
+        buf.fileStart = 0;
+        file.appendBuffer(buf);
+        finish([buf]);
+        return;
+      }
+
+      const reader = r.body.getReader();
+      const chunks = [];
+      let offset = 0;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        /* appendBuffer needs a standalone ArrayBuffer carrying `fileStart`;
+         * the same copy is kept for the Blob so the bytes are held once. */
+        const bytes = value.byteOffset === 0 && value.byteLength === value.buffer.byteLength
+          ? value
+          : value.slice();
+        bytes.buffer.fileStart = offset;
+        offset += bytes.byteLength;
+        chunks.push(bytes);
+        file.appendBuffer(bytes.buffer);
+      }
+      finish(chunks);
     }).catch(reject);
   });
 }
@@ -296,7 +334,7 @@ async function decodeAll(demux, hardwareAcceleration, isStale) {
 
 /* -------------------------------------------------------------- the bank -- */
 
-export function createFrameBank(src, { reduced = false } = {}) {
+export function createFrameBank(src, { reduced = false, onSource = null } = {}) {
   /* [{ts, blob}] sorted by ts, or null while in video mode. */
   let frames = null;
   let dur = 0;
@@ -582,7 +620,7 @@ export function createFrameBank(src, { reduced = false } = {}) {
     // --- stage 1: fetch + demux. Failures here revert outright, no retry.
     let demux;
     try {
-      demux = await Promise.race([fetchAndDemux(src), guard]);
+      demux = await Promise.race([fetchAndDemux(src, onSource), guard]);
     } catch (e) {
       clearTimeout(watchdog);
       building = false;

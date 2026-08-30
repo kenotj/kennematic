@@ -39,7 +39,7 @@ import { motion, useMotionValue, useTransform } from 'framer-motion';
 import { useScrub, useRevealValue } from '../lib/useScrub.js';
 import { usePlate } from '../lib/plate.jsx';
 import { clamp01, r3 } from '../lib/easing.js';
-import { A, B, VIDEO_SRC } from '../lib/constants.js';
+import { A, B, VIDEO_POSTER } from '../lib/constants.js';
 
 const VARIANTS = {
   a: {
@@ -88,7 +88,7 @@ export default function Reveal({ variant = 'a' }) {
   const reveal = variant === 'a' ? revealA : revealB;
   const reducedV = useMotionValue(0);
 
-  useScrub(cfg.index, { videoRef, canvasRef });
+  const plateSrc = useScrub(cfg.index, { videoRef, canvasRef });
 
   useEffect(() => {
     reducedV.set(reduced ? 1 : 0);
@@ -153,10 +153,11 @@ export default function Reveal({ variant = 'a' }) {
       <motion.video
         ref={videoRef}
         id={cfg.videoId}
-        src={VIDEO_SRC}
+        src={plateSrc || undefined}
+        poster={VIDEO_POSTER}
         muted
         playsInline
-        preload="metadata"
+        preload={plateSrc ? 'auto' : 'none'}
         tabIndex={-1}
         style={{ ...MEDIA_STYLE, x: '-50%', y: '-50%', rotate: counterRotate }}
       />
