@@ -105,6 +105,17 @@ function mediaRows(items) {
   const rows = [];
   let i = 0;
   while (i < items.length) {
+    /* An explicit `group` overrides the run logic: consecutive items sharing
+       one wins a row of their own, however many they are. That is how the
+       Coehl model comparison puts three takes of the same beat side by side —
+       a row the ratio rules would otherwise break into 1 + 2. */
+    if (items[i].group) {
+      let g = i;
+      while (g < items.length && items[g].group === items[i].group) g += 1;
+      rows.push(items.slice(i, g));
+      i = g;
+      continue;
+    }
     let j = i;
     while (j < items.length && items[j].ratio === items[i].ratio) j += 1;
     const run = items.slice(i, j);
@@ -143,46 +154,70 @@ function specPairs(body) {
    shows a crop of them. Videos do not: they have their own controls, and a
    click on one means play. */
 function CaseMedia({ m, autoplay = false, poster }) {
+  const box = { maxWidth: mediaMaxWidth(m.ratio), marginInline: 'auto' };
   if (!m.url) {
     return (
-      <div style={{ maxWidth: mediaMaxWidth(m.ratio), marginInline: 'auto' }}>
+      <div style={box}>
         <MediaPlaceholder label={m.label} ratio={m.ratio} />
       </div>
     );
   }
   return (
-    <figure
-      className="m-0 overflow-hidden rounded-[2px] bg-white/[0.04]"
-      style={{ aspectRatio: m.ratio, maxWidth: mediaMaxWidth(m.ratio), marginInline: 'auto' }}
-    >
-      {m.kind === 'video' ? (
-        <video
-          className="h-full w-full object-cover"
-          src={m.url}
-          poster={poster || m.poster || undefined}
-          controls
-          playsInline
-          {...(autoplay ? { autoPlay: true, muted: true, loop: true } : { preload: 'metadata' })}
-        />
-      ) : (
-        <LightboxTrigger url={m.url} label={m.label}>
-          <img className="h-full w-full object-cover" src={m.url} alt={m.label} />
-        </LightboxTrigger>
+    <figure className="m-0" style={box}>
+      <div
+        className="overflow-hidden rounded-[2px] bg-white/[0.04]"
+        style={{ aspectRatio: m.ratio }}
+      >
+        {m.kind === 'video' ? (
+          <video
+            className="h-full w-full object-cover"
+            src={m.url}
+            poster={poster || m.poster || undefined}
+            controls
+            playsInline
+            {...(autoplay ? { autoPlay: true, muted: true, loop: true } : { preload: 'metadata' })}
+          />
+        ) : (
+          <LightboxTrigger url={m.url} label={m.label}>
+            <img className="h-full w-full object-cover" src={m.url} alt={m.label} />
+          </LightboxTrigger>
+        )}
+      </div>
+      {m.caption && (
+        <figcaption className="mt-[max(6px,0.7vw)] text-sub-micro tracking-[0.12em] uppercase opacity-70">
+          {m.caption}
+        </figcaption>
       )}
     </figure>
   );
 }
 
-/* The media belonging to one band of copy, already grouped into rows. */
+/* Written out rather than interpolated so Tailwind's scanner still sees them.
+   An ordinary row stacks on mobile, where a half-width still is too small to
+   read. A grouped row does not: a comparison only works if the takes stay
+   beside each other, and three narrow clips in a strip is the point — one of
+   them blown up to the full column is not a comparison, it is a hero. */
+const ROW_COLS = { 2: 'sm:grid-cols-2', 3: 'sm:grid-cols-3' };
+const GROUP_COLS = { 2: 'grid-cols-2', 3: 'grid-cols-3' };
+
+/* The media belonging to one band of copy, already grouped into rows.
+
+   A grouped row is a comparison, so its videos play themselves: three takes of
+   the same beat only compare if they are all moving at once, and a strip of
+   three paused first frames says nothing the copy has not already said. */
 function MediaRows({ items }) {
   return mediaRows(items).map((row) => (
     <div
       key={row[0].url || row[0].label}
-      className={row.length > 1 ? 'grid sm:grid-cols-2' : ''}
+      className={
+        row.length > 1
+          ? `grid ${(row[0].group ? GROUP_COLS : ROW_COLS)[row.length] ?? 'sm:grid-cols-2'}`
+          : ''
+      }
       style={row.length > 1 ? { gap: GAP_ROW } : undefined}
     >
       {row.map((m) => (
-        <CaseMedia key={m.url || m.label} m={m} />
+        <CaseMedia key={m.url || m.label} m={m} autoplay={Boolean(m.group) && m.kind === 'video'} />
       ))}
     </div>
   ));
