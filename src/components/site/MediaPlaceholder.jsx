@@ -26,7 +26,7 @@ export default function MediaPlaceholder({ label, ratio = '16/9' }) {
         background: `linear-gradient(${angle}deg, hsl(0 0% ${a}%), hsl(0 0% ${b}%))`,
       }}
     >
-      <figcaption className="text-[length:var(--fs-micro)] uppercase tracking-[0.12em] opacity-60">
+      <figcaption className="px-3 text-center text-sub-micro tracking-[0.12em] uppercase opacity-60">
         {label}
       </figcaption>
     </figure>

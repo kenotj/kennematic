@@ -16,14 +16,6 @@ import { useScrub, useRevealValue } from '../lib/useScrub.js';
 import { norm, r3 } from '../lib/easing.js';
 import { A, FADE_A, VIDEO_SRC } from '../lib/constants.js';
 
-const MEDIA_STYLE = {
-  position: 'absolute',
-  inset: 0,
-  width: '100%',
-  height: '100%',
-  objectFit: 'cover',
-};
-
 export default function Stage() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -46,7 +38,11 @@ export default function Stage() {
   }, [revealA]);
 
   return (
-    <motion.div ref={rootRef} className="stage fixed inset-0 z-0" style={{ opacity }}>
+    <motion.div
+      ref={rootRef}
+      className="stage fixed inset-0 z-0 [&.is-covered]:invisible"
+      style={{ opacity }}
+    >
       <video
         ref={videoRef}
         id="v1"
@@ -56,15 +52,14 @@ export default function Stage() {
         preload="auto"
         tabIndex={-1}
         aria-hidden="true"
-        style={MEDIA_STYLE}
+        className="absolute inset-0 h-full w-full object-cover"
       />
       <canvas
         ref={canvasRef}
-        className="plate"
+        className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-240 ease-linear [&.is-live]:opacity-100 motion-reduce:transition-none"
         id="c1"
         width={1280}
         height={720}
-        style={MEDIA_STYLE}
       />
     </motion.div>
   );

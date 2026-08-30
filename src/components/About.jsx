@@ -5,8 +5,8 @@
  * rise contract:
  *   opacity   : in
  *   transform : translateY((1 - in) * --rise-y)   with --rise-y = 2em
- *   filter    : blur((1 - in)² * 5px) while `.is-anim` (0 < in < 1)  ← SQUARED
- *   `.is-hidden` (visibility:hidden) once in <= 0
+ *   filter    : blur((1 - in)² * 5px) while 0 < in < 1  ← SQUARED
+ *   visibility:hidden once in <= 0
  *
  * The rise distance is 2*em*, i.e. relative to this element's own --fs-ui font
  * size, so it cannot be expressed as framer-motion's numeric `y` (px). The
@@ -14,7 +14,7 @@
  * ownership with framer-motion while preserving the legacy geometry.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { motion, useMotionValue, useTransform } from 'framer-motion';
 
 import { usePlate } from '../lib/plate.jsx';
@@ -30,7 +30,6 @@ const COPY =
 
 export default function About() {
   const { progress, reduced } = usePlate();
-  const ref = useRef(null);
 
   const inV = useTransform(progress, (p) => {
     let e;
@@ -57,38 +56,11 @@ export default function About() {
     reducedV.set(reduced ? 1 : 0);
   }, [reduced, reducedV]);
 
-  /* class bookkeeping only — imperative, so it never triggers a re-render */
-  useEffect(() => {
-    const node = ref.current;
-    if (!node) return;
-    let prevAnim = null;
-    let prevHidden = null;
-    const apply = (v) => {
-      const anim = v > 0 && v < 1;
-      const hidden = v <= 0;
-      if (anim !== prevAnim) {
-        prevAnim = anim;
-        node.classList.toggle('is-anim', anim);
-      }
-      if (hidden !== prevHidden) {
-        prevHidden = hidden;
-        node.classList.toggle('is-hidden', hidden);
-      }
-    };
-    apply(inV.get());
-    return inV.on('change', apply);
-  }, [inV]);
-
   return (
     <motion.p
-      ref={ref}
-      className="about rise absolute font-body font-medium text-ui"
+      className="about absolute right-page left-page bottom-[max(16px,6.9038vh)] font-body text-ui font-medium motion-reduce:!transform-none motion-reduce:!filter-none sm:right-auto sm:w-[46.0544vw]"
       style={{
-        left: 'max(20px,3.9456vw)',
-        bottom: 'max(16px,6.9038vh)',
-        width: 'max(260px,46.0544vw)',
         opacity: inV,
-        '--in': inV,
         transform,
         filter,
         visibility,

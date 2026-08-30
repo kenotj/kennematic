@@ -3,13 +3,13 @@
 /* KENNEMATIC — the services strip.
  *
  * Same rise contract as About.jsx (opacity, translateY in em, squared blur
- * while `.is-anim`, `.is-hidden` once in <= 0) — see that file for the why of
+ * during the ramp, hidden once in <= 0) — see that file for the why of
  * each piece. Timing lives in SERVICES_IN / SERVICES_OUT: the dead window
  * between the title's exit (~0.083) and About's entrance (0.18), so it shares
  * About's screen position without ever coexisting with it.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { motion, useMotionValue, useTransform } from 'framer-motion';
 
 import { usePlate } from '../lib/plate.jsx';
@@ -25,7 +25,6 @@ const BLUR_STEP = 0.25; // px
 
 export default function Services() {
   const { progress, reduced } = usePlate();
-  const ref = useRef(null);
 
   const inV = useTransform(progress, (p) => {
     let e;
@@ -52,44 +51,17 @@ export default function Services() {
     reducedV.set(reduced ? 1 : 0);
   }, [reduced, reducedV]);
 
-  /* class bookkeeping only — imperative, so it never triggers a re-render */
-  useEffect(() => {
-    const node = ref.current;
-    if (!node) return;
-    let prevAnim = null;
-    let prevHidden = null;
-    const apply = (v) => {
-      const anim = v > 0 && v < 1;
-      const hidden = v <= 0;
-      if (anim !== prevAnim) {
-        prevAnim = anim;
-        node.classList.toggle('is-anim', anim);
-      }
-      if (hidden !== prevHidden) {
-        prevHidden = hidden;
-        node.classList.toggle('is-hidden', hidden);
-      }
-    };
-    apply(inV.get());
-    return inV.on('change', apply);
-  }, [inV]);
-
   return (
     <motion.div
-      ref={ref}
-      className="services rise absolute font-body font-medium text-ui"
+      className="services absolute right-page left-page bottom-[max(16px,6.9038vh)] font-body text-ui font-medium motion-reduce:!transform-none motion-reduce:!filter-none sm:right-auto sm:w-[46.0544vw]"
       style={{
-        left: 'max(20px,3.9456vw)',
-        bottom: 'max(16px,6.9038vh)',
-        width: 'max(260px,46.0544vw)',
         opacity: inV,
-        '--in': inV,
         transform,
         filter,
         visibility,
       }}
     >
-      <p className="m-0 uppercase text-[length:var(--fs-micro)] opacity-70">What I do</p>
+      <p className="m-0 text-micro uppercase opacity-70">What I do</p>
       <ul className="m-0 mt-[0.6em] list-none p-0 leading-[150%]">
         {SERVICES.map((s) => (
           <li key={s.name}>{s.name}</li>

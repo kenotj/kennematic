@@ -35,7 +35,7 @@ const CONTROL_CLASS = [
   'glass absolute z-10 overflow-hidden rounded-full',
   'flex items-center justify-center',
   'cursor-pointer border-0 text-white',
-  'focus-visible:[outline:2px_solid_var(--red)] focus-visible:[outline-offset:-2px]',
+  'focus-visible:-outline-offset-2 focus-visible:outline-2 focus-visible:outline-red',
 ].join(' ');
 
 const CONTROL_MOTION = { initial: 'rest', animate: 'rest', whileHover: 'hover', whileTap: 'tap' };
@@ -68,7 +68,7 @@ export function LightboxTrigger({ url, label, children }) {
       aria-label={label ? `Expand image: ${label}` : 'Expand image'}
       /* The zoom cursor and the slow drift on hover are the only hints that
          the frame is interactive — there is no overlay chrome to give it away. */
-      className="block h-full w-full cursor-zoom-in border-0 bg-transparent p-0 [&>img]:transition-transform [&>img]:duration-[600ms] [&>img]:ease-[var(--ease-expo)] hover:[&>img]:scale-[1.03] focus-visible:[outline:2px_solid_var(--red)] focus-visible:[outline-offset:-2px]"
+      className="block h-full w-full cursor-zoom-in border-0 bg-transparent p-0 focus-visible:-outline-offset-2 focus-visible:outline-2 focus-visible:outline-red [&>img]:transition-transform [&>img]:duration-[600ms] [&>img]:ease-expo hover:[&>img]:scale-[1.03]"
     >
       {children}
     </button>
@@ -153,11 +153,7 @@ export function LightboxProvider({ items = [], children }) {
               type="button"
               onClick={close}
               aria-label="Close expanded image"
-              className={`${CONTROL_CLASS} px-[11px] py-[10px] text-[length:var(--fs-micro)]`}
-              style={{
-                top: 'calc(var(--top-header) + env(safe-area-inset-top))',
-                right: 'var(--pad-header)',
-              }}
+              className={`${CONTROL_CLASS} top-[calc(var(--spacing-header-top)+env(safe-area-inset-top))] right-page size-11 text-micro`}
             >
               <LiquidFill from="right" scale="sm" />
               <motion.span
@@ -186,8 +182,7 @@ export function LightboxProvider({ items = [], children }) {
                   type="button"
                   onClick={() => step(-1)}
                   aria-label="Previous image"
-                  className={`${CONTROL_CLASS} top-1/2 -translate-y-1/2 px-[13px] py-[12px] text-[length:var(--fs-ui)]`}
-                  style={{ left: 'var(--pad-header)' }}
+                  className={`${CONTROL_CLASS} top-1/2 left-page size-11 -translate-y-1/2 text-ui`}
                 >
                   <LiquidFill from="left" scale="sm" />
                   <motion.span
@@ -203,8 +198,7 @@ export function LightboxProvider({ items = [], children }) {
                   type="button"
                   onClick={() => step(1)}
                   aria-label="Next image"
-                  className={`${CONTROL_CLASS} top-1/2 -translate-y-1/2 px-[13px] py-[12px] text-[length:var(--fs-ui)]`}
-                  style={{ right: 'var(--pad-header)' }}
+                  className={`${CONTROL_CLASS} top-1/2 right-page size-11 -translate-y-1/2 text-ui`}
                 >
                   <LiquidFill from="right" scale="sm" />
                   <motion.span
@@ -229,7 +223,7 @@ export function LightboxProvider({ items = [], children }) {
                 which costs less than squeezing the image on a phone. The extra
                 bottom padding is the counter's slot. */}
             <div
-              className="flex h-full w-full items-center justify-center px-[var(--pad-header)] pt-[calc(var(--pad-header)+10px)] pb-[calc(var(--pad-header)+34px)] md:px-[calc(var(--pad-header)*2+44px)]"
+              className="flex h-full w-full items-center justify-center px-page pt-[calc(var(--spacing-page)+10px)] pb-[calc(var(--spacing-page)+34px)] md:px-[calc(var(--spacing-page)*2+44px)]"
               onClick={(e) => {
                 if (e.target === e.currentTarget) close();
               }}
@@ -249,8 +243,7 @@ export function LightboxProvider({ items = [], children }) {
 
             {many && (
               <p
-                className="pointer-events-none absolute inset-x-0 text-center text-[length:var(--fs-micro)] tracking-[0.12em] opacity-55"
-                style={{ bottom: 'var(--pad-header)' }}
+                className="pointer-events-none absolute inset-x-0 bottom-page text-center text-micro tracking-[0.12em] opacity-55"
               >
                 {index + 1} / {items.length}
               </p>

@@ -69,9 +69,24 @@ export async function generateMetadata({ params }) {
   const { slug } = await params;
   const project = await getProject(slug);
   if (!project) return {};
+  const title = `${project.title} — ${project.client} · KENNEMATIC`;
+  const preview =
+    project.thumb?.kind === 'video' ? project.thumb.poster : project.thumb?.url;
+  const images = preview ? [{ url: preview }] : [];
   return {
-    title: `${project.title} — ${project.client} · KENNEMATIC`,
+    title,
     description: project.summary,
+    openGraph: {
+      title,
+      description: project.summary,
+      images,
+    },
+    twitter: {
+      card: preview ? 'summary_large_image' : 'summary',
+      title,
+      description: project.summary,
+      images,
+    },
   };
 }
 
@@ -186,7 +201,7 @@ function Band({ label, children }) {
   return (
     <section className="grid gap-x-[max(16px,2vw)] gap-y-[10px] md:grid-cols-[152px_1fr]">
       {label ? (
-        <h2 className="case-label m-0 text-[length:var(--fs-micro)] uppercase tracking-[0.12em] opacity-70">
+        <h2 className="m-0 text-sub-micro tracking-[0.12em] uppercase opacity-70 md:pt-[calc((var(--text-sub-ui)*1.5-var(--text-sub-micro)*1.2)/2)]">
           {label}
         </h2>
       ) : (
@@ -195,7 +210,7 @@ function Band({ label, children }) {
         <div aria-hidden="true" className="hidden md:block" />
       )}
       <div
-        className="flex max-w-[65ch] flex-col text-[length:var(--fs-ui)]"
+        className="flex max-w-[65ch] flex-col text-sub-ui"
         style={{ gap: GAP_BAND }}
       >
         {children}
@@ -245,25 +260,21 @@ export default async function ProjectPage({ params }) {
         trail={[{ label: 'Projects', href: '/projects' }, { label: project.title }]}
       />
       <main
-        className="type-sub mx-auto w-full max-w-[min(92vw,1200px)]"
+        className="mx-auto w-[calc(100%-2rem)] max-w-[1200px] pt-[calc(var(--spacing-page)*2+max(88px,8.1vw))] pb-[calc(var(--spacing-page)*4+env(safe-area-inset-bottom))] sm:w-[92vw]"
         /* Top padding clears the absolute header (pill + breadcrumb) and then
            opens the gap down to the eyebrow. That gap runs 2.5x its old size
-           from tablet up; the 56px floor holds on small screens, where the
-           header stack already sits close to the copy. */
-        style={{
-          padding: 'calc(var(--pad-header) * 2 + max(56px, 8.1vw)) 0 calc(var(--pad-header) * 4)',
-        }}
+           from tablet up; the 88px floor clears a wrapped mobile breadcrumb. */
       >
         {/* hero copy — the one block that sits at the container edge with the
             hero media, so the title and the film read as a single opening */}
         <header className="flex flex-col gap-[max(12px,1.6327vw)]">
-          <p className="text-[length:var(--fs-micro)] uppercase tracking-[0.12em] opacity-70">
+          <p className="text-sub-micro tracking-[0.12em] uppercase opacity-70">
             {project.category} · {project.client} · {project.year} · {project.role}
           </p>
-          <h1 className="font-display font-extrabold uppercase text-stat leading-[100%]">
+          <h1 className="font-display text-sub-stat leading-[100%] font-extrabold uppercase">
             {project.title}
           </h1>
-          <p className="max-w-[60ch] hyphens-auto text-justify text-[length:var(--fs-ui)] leading-[140%]">
+          <p className="max-w-[60ch] hyphens-auto text-left text-sub-ui leading-[150%] sm:text-justify">
             {project.summary}
           </p>
         </header>
@@ -287,10 +298,10 @@ export default async function ProjectPage({ params }) {
             return (
               <Band key={section.heading} label={section.heading}>
                 {specs ? (
-                  <dl className="m-0 grid grid-cols-[minmax(0,max-content)_1fr] gap-x-[max(16px,1.6vw)] gap-y-[8px] leading-[150%]">
+                  <dl className="m-0 grid grid-cols-1 gap-x-[max(16px,1.6vw)] gap-y-1 leading-[150%] sm:grid-cols-[minmax(0,max-content)_1fr] sm:gap-y-2">
                     {specs.map(([term, value]) => (
                       <Fragment key={term}>
-                        <dt className="m-0 whitespace-nowrap opacity-55">{term}</dt>
+                        <dt className="m-0 mt-3 whitespace-nowrap opacity-55 first:mt-0 sm:mt-0">{term}</dt>
                         <dd className="m-0">{value}</dd>
                       </Fragment>
                     ))}
@@ -298,7 +309,7 @@ export default async function ProjectPage({ params }) {
                 ) : (
                   /* Justified, so the copy squares off against the media below
                      it. Hyphenation is what keeps that from opening rivers. */
-                  <p className="m-0 hyphens-auto text-justify leading-[150%]">{section.body}</p>
+                  <p className="m-0 hyphens-auto text-left leading-[150%] sm:text-justify">{section.body}</p>
                 )}
                 {inline.has(section.heading) && <MediaRows items={inline.get(section.heading)} />}
               </Band>
@@ -317,16 +328,16 @@ export default async function ProjectPage({ params }) {
 
         {/* footer nav */}
         <nav
-          className="flex flex-wrap items-baseline justify-between gap-[16px] border-t border-white/[0.12] text-[length:var(--fs-ui)]"
+          className="grid grid-cols-2 items-start gap-4 border-t border-white/[0.12] text-sub-ui md:flex md:items-baseline md:justify-between"
           style={{ marginTop: GAP_SECTION, paddingTop: GAP_BAND }}
         >
-          <Link href={`/projects/${prev.slug}`} className="underline hover:opacity-[.65]">
+          <Link href={`/projects/${prev.slug}`} className="min-w-0 underline hover:opacity-[.65]">
             ← {prev.title}
           </Link>
-          <Link href="/projects" className="uppercase text-[length:var(--fs-micro)] tracking-[0.12em] opacity-70 hover:opacity-100">
+          <Link href="/projects" className="order-first col-span-2 text-center text-sub-micro tracking-[0.12em] uppercase opacity-70 hover:opacity-100 md:order-none md:col-auto">
             All projects
           </Link>
-          <Link href={`/projects/${next.slug}`} className="underline hover:opacity-[.65]">
+          <Link href={`/projects/${next.slug}`} className="min-w-0 text-right underline hover:opacity-[.65]">
             {next.title} →
           </Link>
         </nav>

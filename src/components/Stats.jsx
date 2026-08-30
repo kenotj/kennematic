@@ -14,11 +14,10 @@
  * outside its slot it sits parked at exit 1. Net effect: the logo's own move,
  * performed three times, and then the logo itself.
  *
- * `is-gone` ships in the INITIAL markup so that with JS disabled the three
- * counters are hidden rather than stacked on top of one another.
+ * Visibility is derived from the same MotionValue as opacity, so inactive
+ * counters never overlap or enter the accessibility hit area.
  */
 
-import { useEffect, useRef } from 'react';
 import { motion, useTransform } from 'framer-motion';
 
 import { usePlate } from '../lib/plate.jsx';
@@ -34,7 +33,6 @@ const EXIT_LEN = 1 - STAT_IN - STAT_HOLD;
 
 function Stat({ index, label, num }) {
   const { progress, reduced } = usePlate();
-  const ref = useRef(null);
 
   const exit = useTransform(progress, (p) => {
     const a = STAT_FROM + index * SLOT;
@@ -55,36 +53,12 @@ function Stat({ index, label, num }) {
   });
   const visibility = useTransform(exit, (e) => (e >= 1 ? 'hidden' : 'visible'));
 
-  /* class bookkeeping only — imperative, so it never triggers a re-render */
-  useEffect(() => {
-    const node = ref.current;
-    if (!node) return;
-    let prevExiting = null;
-    let prevGone = null;
-    const apply = (e) => {
-      const exiting = e > 0;
-      const gone = e >= 1;
-      if (exiting !== prevExiting) {
-        prevExiting = exiting;
-        node.classList.toggle('is-exiting', exiting);
-      }
-      if (gone !== prevGone) {
-        prevGone = gone;
-        node.classList.toggle('is-gone', gone);
-      }
-    };
-    apply(exit.get());
-    return exit.on('change', apply);
-  }, [exit]);
-
   return (
     <motion.dl
-      ref={ref}
       data-stat=""
-      className="stat exit-3d is-gone absolute left-0 right-0 flex flex-col items-center justify-end"
+      className="stat absolute right-0 left-0 flex flex-col items-center justify-end gap-title-gap motion-reduce:!transform-none motion-reduce:!filter-none"
       style={{
         bottom: 'calc(env(safe-area-inset-bottom) + max(12px,2.0921vh))',
-        gap: 'var(--gap-title)',
         z,
         opacity,
         filter,
@@ -93,7 +67,7 @@ function Stat({ index, label, num }) {
     >
       <dt className="stat__label font-body text-ui uppercase">{label}</dt>
       {/* the parentheses are part of the copy, not decoration */}
-      <dd className="stat__num type-accent text-stat">{num}</dd>
+      <dd className="stat__num font-display text-stat font-light italic">{num}</dd>
     </motion.dl>
   );
 }

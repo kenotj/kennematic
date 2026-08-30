@@ -25,13 +25,12 @@ export default function PlaygroundPage() {
     <>
       <SiteHeader trail={[{ label: 'Playground' }]} />
       <main
-        className="mx-auto w-full max-w-[min(92vw,1200px)]"
-        style={{ padding: 'calc(var(--pad-header) * 2 + 56px) 0 calc(var(--pad-header) * 4)' }}
+        className="mx-auto w-[calc(100%-2rem)] max-w-[1200px] pt-[calc(var(--spacing-page)*2+56px)] pb-[calc(var(--spacing-page)*4+env(safe-area-inset-bottom))] sm:w-[92vw]"
       >
-        <h1 className="font-display font-extrabold uppercase text-stat leading-[100%]">
+        <h1 className="font-display text-sub-stat leading-[100%] font-extrabold uppercase">
           Playground
         </h1>
-        <p className="mt-[16px] max-w-[60ch] text-[length:var(--fs-ui)] leading-[150%] opacity-80">
+        <p className="mt-4 max-w-[60ch] text-sub-ui leading-[150%] opacity-80">
           Experiments and studies that never asked to be case studies. Updated whenever something
           escapes the drafts folder.
         </p>
@@ -39,7 +38,7 @@ export default function PlaygroundPage() {
           {EXPERIMENTS.map((e) => (
             <div key={e.label} className="flex flex-col gap-[8px]">
               <MediaPlaceholder label={e.label} ratio={e.ratio} />
-              <p className="m-0 text-[length:var(--fs-micro)] opacity-70">{e.note}</p>
+              <p className="m-0 text-sub-micro leading-relaxed opacity-70">{e.note}</p>
             </div>
           ))}
         </div>

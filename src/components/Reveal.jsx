@@ -130,7 +130,7 @@ export default function Reveal({ variant = 'a' }) {
   return (
     <motion.div
       ref={rootRef}
-      className={`reveal reveal--${variant}`}
+      className={`reveal reveal--${variant} [&.is-covered]:invisible`}
       aria-hidden={cfg.ariaHidden ? 'true' : undefined}
       style={{
         position: 'fixed',
@@ -162,7 +162,7 @@ export default function Reveal({ variant = 'a' }) {
       />
       <motion.canvas
         ref={canvasRef}
-        className="plate"
+        className="plate opacity-0 transition-opacity duration-240 ease-linear [&.is-live]:opacity-100 motion-reduce:transition-none"
         id={cfg.canvasId}
         width={1280}
         height={720}

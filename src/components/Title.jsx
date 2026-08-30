@@ -7,8 +7,7 @@
  *               projection on .chrome supplies all of the acceleration; easing
  *               the Z ramp double-eases the move and reads wrong.
  *   opacity   : 1 - exit²
- *   filter    : blur(exit² * --exit-blur) but ONLY while `.is-exiting`
- *               (exit > 0), and `none` once `.is-gone` (exit >= 1).
+ *   filter    : blur(exit² * --exit-blur) while 0 < exit < 1, then none.
  *
  * PERF: the blur is quantised to 0.25px steps before it is written. This is a
  * ~200px, full-bleed text block; letting the raw float through means a fresh
@@ -92,49 +91,25 @@ export default function Title() {
     };
   }, [reduced]);
 
-  /* class bookkeeping only — imperative, so it never triggers a re-render */
-  useEffect(() => {
-    const node = ref.current;
-    if (!node) return;
-    let prevExiting = null;
-    let prevGone = null;
-    const apply = (e) => {
-      const exiting = e > 0;
-      const gone = e >= 1;
-      if (exiting !== prevExiting) {
-        prevExiting = exiting;
-        node.classList.toggle('is-exiting', exiting);
-      }
-      if (gone !== prevGone) {
-        prevGone = gone;
-        node.classList.toggle('is-gone', gone);
-      }
-    };
-    apply(exit.get());
-    return exit.on('change', apply);
-  }, [exit]);
-
   return (
     <motion.div
       ref={ref}
-      className="title exit-3d absolute left-0 right-0 flex flex-col items-center justify-end"
+      className="title absolute right-0 left-0 bottom-[env(safe-area-inset-bottom)] flex flex-col items-center justify-end gap-title-gap motion-reduce:!transform-none motion-reduce:!filter-none"
       style={{
-        bottom: 'env(safe-area-inset-bottom)',
-        gap: 'var(--gap-title)',
         z,
         opacity,
         filter,
         visibility,
       }}
     >
-      <p className="title__tag font-body font-normal text-ui uppercase text-center tracking-[0.14em]">
+      <p className="title__tag px-page text-center font-body text-ui font-normal tracking-[0.14em] uppercase opacity-100 transition-opacity delay-[380ms] duration-700 ease-expo [.js:not(.is-ready)_&]:opacity-0 motion-reduce:delay-0 motion-reduce:duration-200">
         AI Film &amp; Advert Direction
       </p>
       {/* Letters are aria-hidden spans (the h1 carries the accessible name);
           inline-block so each can translate. No whitespace between them, and
           whitespace-nowrap stays as the guard against any wrap/clip surprise. */}
       <h1
-        className="title__mark font-display font-extrabold tracking-[-0.02em] text-display whitespace-nowrap"
+        className="title__mark whitespace-nowrap font-display text-display font-extrabold tracking-[-0.02em] opacity-100 blur-none transition-[opacity,filter] duration-[1400ms] ease-expo [.js:not(.is-ready)_&]:opacity-0 [.js:not(.is-ready)_&]:blur-[14px] motion-reduce:!blur-none motion-reduce:duration-200"
         aria-label={MARK}
       >
         {MARK.split('').map((ch, i) => (

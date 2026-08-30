@@ -26,7 +26,7 @@ export default function App() {
       <Works />
       <Reveal variant="b" />
       <Chrome />
-      <div className="runway" />
+      <div className="h-[900vh]" />
     </PlateProvider>
   );
 }

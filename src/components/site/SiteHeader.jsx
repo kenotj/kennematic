@@ -1,8 +1,7 @@
 'use client';
 
 /* KENNEMATIC — sub-page nav: the same floating glass pill as the landing,
- * minus `.pill-enter` (that class keys off the landing-only `is-ready`
- * entrance and would leave this stuck at opacity 0 on sub-pages).
+ * without the landing-only `is-ready` entrance variants.
  *
  * `trail` renders a breadcrumb under the pill — an array of { label, href? }
  * where entries with an href are links back up the tree and the last (current
@@ -22,10 +21,9 @@ import { LiquidFill, liquidInk, LIQUID_INK_TRANSITION } from './liquidHover.jsx'
    liquid-hover host, so the two pills render the same length and behave the
    same across routes. */
 const ITEM_CLASS = [
-  'relative flex items-center px-[16px] py-[10px]',
-  'font-display font-bold uppercase text-[length:var(--fs-micro)] tracking-[0.08em] whitespace-nowrap',
-  'focus-visible:[outline:2px_solid_var(--red)]',
-  'focus-visible:[outline-offset:-2px]',
+  'relative flex min-h-11 items-center px-3.5 py-2.5 sm:px-4',
+  'font-display text-micro font-bold uppercase tracking-[0.08em] whitespace-nowrap',
+  'focus-visible:-outline-offset-2 focus-visible:outline-2 focus-visible:outline-red',
 ].join(' ');
 
 const ITEM_MOTION = {
@@ -44,11 +42,7 @@ export default function SiteHeader({ trail }) {
        viewport. `w-fit` keeps the pill shrink-wrapped — without it the wide
        nowrap breadcrumb below stretches the header box and the pill with it. */
     <header
-      className="site-header absolute z-50"
-      style={{
-        top: 'calc(var(--top-header) + env(safe-area-inset-top))',
-        left: 'var(--pad-header)',
-      }}
+      className="site-header absolute top-[calc(var(--spacing-header-top)+env(safe-area-inset-top))] left-page z-50"
     >
       <div className="glass flex w-fit items-center overflow-hidden rounded-full">
         <motion.div {...ITEM_MOTION}>
@@ -93,7 +87,7 @@ export default function SiteHeader({ trail }) {
       {trail?.length > 0 && (
         <nav
           aria-label="Breadcrumb"
-          className="mt-[10px] flex max-w-[calc(100vw-var(--pad-header)*2)] flex-wrap items-center gap-[8px] px-[16px] font-display text-[length:var(--fs-micro)] font-medium uppercase tracking-[0.08em]"
+          className="mt-2.5 flex max-w-[calc(100vw-var(--spacing-page)*2)] flex-wrap items-center gap-2 px-3.5 font-display text-micro font-medium tracking-[0.08em] uppercase sm:px-4"
         >
           {trail.map((item, i) => (
             <Fragment key={`${item.label}-${i}`}>
@@ -108,8 +102,7 @@ export default function SiteHeader({ trail }) {
                   className={[
                     'opacity-70 [transition:opacity_200ms_linear]',
                     '[@media(hover:hover)_and_(pointer:fine)]:hover:opacity-100',
-                    'focus-visible:[outline:2px_solid_var(--red)]',
-                    'focus-visible:[outline-offset:2px]',
+                    'focus-visible:outline-2 focus-visible:outline-red focus-visible:outline-offset-2',
                   ].join(' ')}
                 >
                   {item.label}

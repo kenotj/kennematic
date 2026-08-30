@@ -86,11 +86,11 @@ export default function ProjectIndexList({ projects }) {
               /* Keyboard focus moves the row without a cursor to anchor the
                  tile to, so the preview stays out of it entirely. */
               onFocus={() => setActive(null)}
-              className="flex flex-wrap items-baseline gap-x-[24px] gap-y-[4px] py-[max(16px,1.6vw)] [transition:opacity_200ms_linear] hover:opacity-[.65] focus-visible:[outline:2px_solid_var(--red)] focus-visible:[outline-offset:4px]"
+              className="grid min-h-20 grid-cols-[auto_1fr] items-baseline gap-x-4 gap-y-2 py-[max(16px,1.6vw)] [transition:opacity_200ms_linear] hover:opacity-[.65] focus-visible:outline-2 focus-visible:outline-red focus-visible:outline-offset-4 sm:min-h-0 sm:grid-cols-[4rem_minmax(8rem,.55fr)_1.45fr] sm:gap-x-6 sm:gap-y-1"
             >
-              <span className="text-[length:var(--fs-micro)] opacity-70">{p.year}</span>
-              <span className="text-[length:var(--fs-ui)] underline">{p.client}</span>
-              <span className="text-[length:var(--fs-work)] font-display font-extrabold">
+              <span className="text-sub-micro opacity-70">{p.year}</span>
+              <span className="text-sub-ui underline">{p.client}</span>
+              <span className="col-span-2 font-display text-sub-work font-extrabold sm:col-span-1">
                 {p.title}
               </span>
             </Link>
