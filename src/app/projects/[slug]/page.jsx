@@ -7,14 +7,20 @@
  *   1. ONE SPINE. The section label hangs in the left margin; the copy AND its
  *      media both start at the content column's left edge. Media used to be a
  *      sibling of the section and spanned the whole container, so text and
- *      images never shared an edge. The hero is the single deliberate
- *      exception — it spans the container, which is what makes it read as the
- *      hero.
+ *      images never shared an edge. Two deliberate exceptions: the hero spans
+ *      the container, which is what makes it read as the hero; and PORTRAIT
+ *      media centres on the column instead (rule 4 leaves it narrower than the
+ *      measure, and left-locking that much slack pulled the page off balance).
  *   2. GAPS ENCODE GROUPING. Three steps only: media within a row < copy to its
  *      media < section to section. A flat gap everywhere is what made the
  *      images look unattached to the text they belong to.
  *   3. ROWS ARE RATIO-PURE. See mediaRows() — mixed aspect ratios never share a
  *      row, and no row is left half-empty.
+ *   4. NO SLOT IS TALLER THAN THE SCREEN. The content column is capped at the
+ *      reading measure, which is a comfortable width and therefore a punishing
+ *      height once a slot is portrait: the Coehl 9:16 hero filled the measure
+ *      and came out nearly twice as tall, so the viewer met a wall of video
+ *      with no way to see the shot whole. See mediaMaxWidth().
  */
 
 import { Fragment } from 'react';
@@ -31,6 +37,29 @@ import { getAllProjects, getProject } from '../../../lib/db.js';
 const GAP_ROW = 'max(12px,1.2vw)'; /* between media sharing a row */
 const GAP_BAND = 'max(20px,2.2vw)'; /* between copy and its media */
 const GAP_SECTION = 'max(56px,6.5vw)'; /* between sections */
+
+/* Rule 4's ceiling. See mediaMaxWidth() for why it is spent on width. */
+const MEDIA_MAX_H = '72vh';
+
+/* The width a slot may not exceed if its height is to stay under MEDIA_MAX_H.
+ *
+ * The cap is spent on WIDTH rather than height on purpose: `aspect-ratio` sizes
+ * the box off the inline axis, so capping the width keeps one declaration in
+ * charge of the whole figure. A `max-height` instead needs `width: auto`, which
+ * shrinks the figure to its content and lets it drift off the spine — rule 1.
+ *
+ * Landscape slots never reach the cap (16/9 resolves to 128vh of width, far
+ * past the column), so this is a no-op for everything but portrait.
+ *
+ * Paired with `margin-inline: auto` at the call site, which is what centres the
+ * capped slot on the column (rule 1's second exception). That is a no-op for
+ * anything the cap does not bind: a slot already filling the column has no
+ * slack for auto margins to divide. */
+function mediaMaxWidth(ratio) {
+  const [w, h] = String(ratio).split('/').map(Number);
+  if (!w || !h) return undefined;
+  return `calc(${MEDIA_MAX_H} * ${w} / ${h})`;
+}
 
 export async function generateStaticParams() {
   return (await getAllProjects()).map((p) => ({ slug: p.slug }));
@@ -99,11 +128,17 @@ function specPairs(body) {
    shows a crop of them. Videos do not: they have their own controls, and a
    click on one means play. */
 function CaseMedia({ m, autoplay = false, poster }) {
-  if (!m.url) return <MediaPlaceholder label={m.label} ratio={m.ratio} />;
+  if (!m.url) {
+    return (
+      <div style={{ maxWidth: mediaMaxWidth(m.ratio), marginInline: 'auto' }}>
+        <MediaPlaceholder label={m.label} ratio={m.ratio} />
+      </div>
+    );
+  }
   return (
     <figure
       className="m-0 overflow-hidden rounded-[2px] bg-white/[0.04]"
-      style={{ aspectRatio: m.ratio }}
+      style={{ aspectRatio: m.ratio, maxWidth: mediaMaxWidth(m.ratio), marginInline: 'auto' }}
     >
       {m.kind === 'video' ? (
         <video

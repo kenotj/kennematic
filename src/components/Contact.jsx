@@ -20,9 +20,12 @@ const RISE_Y = 2; // em
 const RISE_BLUR = 5; // px
 const BLUR_STEP = 0.25; // px
 
-/* Still a list, and the row still gaps, so adding a second profile back is a
-   one-line change. */
-const SOCIALS = [{ label: 'Instagram', href: 'https://www.instagram.com/kennematic' }];
+/* Empty for now — Instagram is hidden until it is ready to be shown:
+   { label: 'Instagram', href: 'https://www.instagram.com/kennematic' }
+
+   Still a list, and the row still gaps, so putting that entry back (or adding
+   a second profile) is a one-line change and the row returns with it. */
+const SOCIALS = [];
 
 const LINK_CLASS = [
   'pointer-events-auto underline',
@@ -101,13 +104,19 @@ export default function Contact() {
       <a href={`mailto:${CONTACT_EMAIL}`} className={LINK_CLASS}>
         {CONTACT_EMAIL}
       </a>
-      <div className="flex gap-[1.5em] text-[length:var(--fs-micro)] uppercase">
-        {SOCIALS.map((s) => (
-          <a key={s.label} href={s.href} target="_blank" rel="noreferrer" className={LINK_CLASS}>
-            {s.label}
-          </a>
-        ))}
-      </div>
+      {/* Gated on the list rather than left to render empty: this row is a
+          flex child of a column with gap-[0.8em], so an empty div would still
+          push that gap under the email address and leave the block sitting
+          visibly off its 38% centre. */}
+      {SOCIALS.length > 0 && (
+        <div className="flex gap-[1.5em] text-[length:var(--fs-micro)] uppercase">
+          {SOCIALS.map((s) => (
+            <a key={s.label} href={s.href} target="_blank" rel="noreferrer" className={LINK_CLASS}>
+              {s.label}
+            </a>
+          ))}
+        </div>
+      )}
     </motion.div>
   );
 }

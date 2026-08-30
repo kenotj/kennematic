@@ -122,7 +122,7 @@ function Card({ item, index, count, progress, metrics, version, reduced }) {
       <TransitionLink
         href={`/projects/${item.slug}`}
         className={[
-          'block rounded-[10px]',
+          'block h-full rounded-[10px]',
           'pointer-events-auto',
           'focus-visible:[outline:2px_solid_var(--red)]',
           'focus-visible:[outline-offset:4px]',
@@ -138,7 +138,7 @@ function Card({ item, index, count, progress, metrics, version, reduced }) {
             the eyebrow and title invert together (their opacity utilities
             still apply, which is what keeps the eyebrow secondary on white). */}
         <motion.div
-          className="glass relative overflow-hidden rounded-[10px] p-[0.45vw]"
+          className="glass relative h-full overflow-hidden rounded-[10px] p-[0.45vw]"
           initial="rest"
           whileHover={hover}
           whileTap={reduced ? undefined : 'tap'}
@@ -187,7 +187,13 @@ function Card({ item, index, count, progress, metrics, version, reduced }) {
             </p>
             {/* line-clamp still caps a long title at two lines; the min-height
                 floor is only there so a one-line title doesn't sit tight
-                against the card edge — the grid equalises the row itself. */}
+                against the card edge — the grid equalises the row itself.
+                That equalising only reaches the visible card because the grid
+                item, the anchor and the glass box all carry h-full: without
+                that chain the cell stretches and the card inside it still
+                shrink-wraps its copy, which is what left a one-line title
+                (Coehl) sitting shorter than a two-line one (Born from
+                Nature). */}
             <motion.p
               className="m-0 mt-[0.25vw] flex min-h-[1.25em] items-start gap-[0.4vw] text-[length:var(--fs-ui)] font-semibold leading-[115%]"
               variants={{ rest: { x: 0 }, hover: { x: 4 }, tap: { x: 4 } }}
