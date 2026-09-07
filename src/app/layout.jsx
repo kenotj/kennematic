@@ -1,4 +1,5 @@
 import { Montserrat } from 'next/font/google';
+import { Analytics } from '@vercel/analytics/next';
 
 import './globals.css';
 import { LiquidDefs } from '../components/site/liquidHover.jsx';
@@ -83,6 +84,7 @@ export default async function RootLayout({ children }) {
         <ProjectsProvider projects={projects} featured={featured}>
           {children}
         </ProjectsProvider>
+        <Analytics />
       </body>
     </html>
   );
