@@ -145,6 +145,11 @@ function specPairs(body) {
    `autoplay` is for the hero: silent looping playback with controls still
    available; everything else waits to be played.
 
+   `poster` is a fallback only. The item's own poster wins because it is cut
+   from the same file at the same ratio; the card poster is 16:9, and in a
+   portrait slot object-cover shows a zoomed centre slice of it, and a
+   fullscreen before playback shows it landscape (the Nana hero).
+
    The media carries no visible caption — the images are meant to read as the
    work itself, not as plates in a report. `label` still does real work: it is
    the alt text, the lightbox's accessible name, and what MediaPlaceholder shows
@@ -172,7 +177,7 @@ function CaseMedia({ m, autoplay = false, poster }) {
           <video
             className="h-full w-full object-cover"
             src={m.url}
-            poster={poster || m.poster || undefined}
+            poster={m.poster || poster || undefined}
             controls
             playsInline
             {...(autoplay ? { autoPlay: true, muted: true, loop: true } : { preload: 'metadata' })}
@@ -315,9 +320,9 @@ export default async function ProjectPage({ params }) {
         </header>
 
         {/* hero media — on the same spine and the same measure as every other
-            image on the page, so nothing outruns the copy. Falls back to the
-            card poster so the slot is never a black rectangle before the video
-            paints its first frame. */}
+            image on the page, so nothing outruns the copy. The card poster is
+            the fallback for a hero with no poster of its own, so the slot is
+            never a black rectangle before the video paints its first frame. */}
         {hero && (
           <div className="mt-[max(28px,3.4vw)]">
             <Band>
