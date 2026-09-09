@@ -147,7 +147,7 @@ function specPairs(body) {
 
    `poster` is a fallback only. The item's own poster wins because it is cut
    from the same file at the same ratio; the card poster is 16:9, and in a
-   portrait slot object-cover shows a zoomed centre slice of it, and a
+   portrait slot it has a different framing from the video, and a
    fullscreen before playback shows it landscape (the Nana hero).
 
    The media carries no visible caption — the images are meant to read as the
@@ -175,7 +175,9 @@ function CaseMedia({ m, autoplay = false, poster }) {
       >
         {m.kind === 'video' ? (
           <video
-            className="h-full w-full object-cover"
+            /* Contain also applies in native fullscreen, preserving portrait
+               footage instead of cropping it to the screen's aspect ratio. */
+            className="h-full w-full object-contain"
             src={m.url}
             poster={m.poster || poster || undefined}
             controls
